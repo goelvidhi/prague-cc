@@ -1,0 +1,1105 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!-- This template is for creating an Internet Draft using xml2rfc,
+    which is available here: http://xml.resource.org. -->
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd">
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+<!-- used by XSLT processors -->
+<!-- For a complete list and description of processing instructions (PIs), 
+    please see http://xml.resource.org/authoring/README.html. -->
+<!-- Below are generally applicable Processing Instructions (PIs) that most I-Ds might want to use.
+    (Here they are set differently than their defaults in xml2rfc v1.32) -->
+<?rfc strict="yes" ?>
+<!-- give errors regarding ID-nits and DTD validation -->
+<!-- control the table of contents (ToC) -->
+<?rfc toc="yes"?>
+<!-- generate a ToC -->
+<?rfc tocdepth="4"?>
+<!-- the number of levels of subsections in ToC. default: 3 -->
+<!-- control references -->
+<?rfc symrefs="yes"?>
+<!-- use symbolic references tags, i.e, [RFC2119] instead of [1] -->
+<?rfc sortrefs="yes" ?>
+<!-- sort the reference entries alphabetically -->
+<!-- control vertical white space 
+    (using these PIs as follows is recommended by the RFC Editor) -->
+<?rfc compact="yes" ?>
+<!-- do not start each main section on a new page -->
+<?rfc subcompact="no" ?>
+<!-- keep one blank line between list items -->
+<!-- end of list of popular I-D processing instructions -->
+<rfc category="exp" docName="draft-briscoe-iccrg-prague-congestion-control-00"
+     ipr="trust200902" updates="">
+  <!-- category values: std, bcp, info, exp, and historic
+    ipr values: trust200902, noModificationTrust200902, noDerivativesTrust200902,
+       or pre5378Trust200902
+    you can add the attributes updates="NNNN" and obsoletes="NNNN" 
+    they will automatically be output with "(if approved)" -->
+
+  <!-- ***** FRONT MATTER ***** -->
+
+  <front>
+    <!-- The abbreviated title is used in the page header - it is only necessary if the 
+       full title is longer than 39 characters -->
+
+    <title abbrev="Prague Congestion Control">Prague Congestion
+    Control</title>
+
+    <author fullname="Koen De Schepper" initials="K." surname="De Schepper">
+      <organization>Nokia Bell Labs</organization>
+
+      <address>
+        <postal>
+          <street/>
+
+          <city>Antwerp</city>
+
+          <country>Belgium</country>
+        </postal>
+
+        <email>koen.de_schepper@nokia.com</email>
+
+        <uri>https://www.bell-labs.com/usr/koen.de_schepper</uri>
+      </address>
+    </author>
+
+    <author fullname="Olivier Tilmans" initials="K." surname="De Schepper">
+      <organization>Nokia Bell Labs</organization>
+
+      <address>
+        <postal>
+          <street/>
+
+          <city>Antwerp</city>
+
+          <country>Belgium</country>
+        </postal>
+
+        <email>olivier.tilmans@nokia-bell-labs.com</email>
+      </address>
+    </author>
+
+    <author fullname="Bob Briscoe" initials="B." role="editor"
+            surname="Briscoe">
+      <organization>Independent</organization>
+
+      <address>
+        <postal>
+          <street/>
+
+          <country>UK</country>
+        </postal>
+
+        <email>ietf@bobbriscoe.net</email>
+
+        <uri>http://bobbriscoe.net/</uri>
+      </address>
+    </author>
+
+    <author fullname="Asad Sajjad Ahmed" initials="A.S." surname="Ahmed">
+      <organization>Independent</organization>
+
+      <address>
+        <postal>
+          <street/>
+
+          <country>Norway</country>
+        </postal>
+
+        <email>me@asadsa.com</email>
+      </address>
+    </author>
+
+    <date month="" year="2020"/>
+
+    <area>IRTF</area>
+
+    <workgroup>Internet Congestion Control Research Group (ICCRG)</workgroup>
+
+    <keyword>Internet-Draft</keyword>
+
+    <keyword>I-D</keyword>
+
+    <abstract>
+      <t>{ToDo}</t>
+    </abstract>
+  </front>
+
+  <middle>
+    <section anchor="pracc_intro" title="Introduction">
+      <t>{ToDo: Copy largely from netdev Prague paper}</t>
+
+      <section anchor="pracc_motivation"
+               title="Motivation: Low Delay /and/ High Bandwidth">
+        <t>{ToDo: Copy largely from netdev Prague paper}</t>
+
+        <t>Not just for today's scale - mention scaling as well as low delay,
+        high bandwidth.</t>
+      </section>
+
+      <section anchor="pracc_roadmap" title="Document Purpose and Roadmap">
+        <t>{ToDo}</t>
+      </section>
+
+      <section anchor="pracc_Terminology" title="Terminology">
+        <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+        "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+        document are to be interpreted as described in <xref
+        target="RFC2119"/> when, and only when, they appear in all capitals,
+        as shown here.</t>
+
+        <t>The DualQ Coupled AQM uses two queues for two services. Each of the
+        following terms identifies both the service and the queue that
+        provides the service:<list style="hanging">
+            <t hangText="Classic Congestion Control:">A congestion control
+            behaviour that can co-exist with standard TCP Reno <xref
+            target="RFC5681"/> without causing significantly negative impact
+            on its flow rate <xref target="RFC5033"/>. With Classic congestion
+            controls, as flow rate scales, the number of round trips between
+            congestion signals (losses or ECN marks) rises with the flow rate.
+            So it takes longer and longer to recover after each congestion
+            event. Therefore control of queuing and utilization becomes very
+            slack, and the slightest disturbance prevents a high rate from
+            being attained <xref target="RFC3649"/>.</t>
+
+            <t hangText="Scalable Congestion Control:">A congestion control
+            where the average time from one congestion signal to the next (the
+            recovery time) remains invariant as the flow rate scales, all
+            other factors being equal. This maintains the same degree of
+            control over queueing and utilization whatever the flow rate, as
+            well as ensuring that high throughput is robust to disturbances.
+            For instance, DCTCP averages 2 congestion signals per round-trip
+            whatever the flow rate. For the public Internet a Scalable
+            transport has to comply with the requirements in Section 4
+            of&nbsp;<xref target="I-D.ietf-tsvwg-ecn-l4s-id"/> (aka. the
+            'Prague L4S requirements').</t>
+
+            <t hangText="Reno-friendly:">The subset of Classic traffic that
+            excludes unresponsive traffic and excludes experimental congestion
+            controls intended to coexist with Reno but without always being
+            strictly friendly to it (as allowed by <xref target="RFC5033"/>).
+            Reno-friendly is used in place of 'TCP-friendly', given that the
+            TCP protocol is used with many different congestion control
+            behaviours.</t>
+
+            <t hangText="Classic ECN:">The original Explicit Congestion
+            Notification (ECN) protocol <xref target="RFC3168"/>, which
+            requires ECN signals to be treated the same as drops, both when
+            generated in the network and when responded to by the
+            sender.<vspace blankLines="1"/>The names used for the four
+            codepoints of the 2-bit IP-ECN field are as defined in <xref
+            target="RFC3168"/>: Not ECT, ECT(0), ECT(1) and CE, where ECT
+            stands for ECN-Capable Transport and CE stands for Congestion
+            Experienced.</t>
+
+            <t hangText="ACK:">an ACKnowledgement</t>
+
+            <t hangText="EWMA:">Exponentially Weighted Moving Average</t>
+
+            <t hangText="RTT:">Round Trip Time</t>
+          </list></t>
+
+        <t>Definitions of Parameters and Variables:<list style="hanging">
+            <t hangText="MTU_BITS:">Maximum transmission unit [b]</t>
+
+            <t hangText="cwnd:">Congestion window [B]</t>
+
+            <t hangText="ssthresh:">Slow start threshold [B]</t>
+
+            <t hangText="alpha:">EWMA of the ECN marking fraction []</t>
+
+            <t hangText="acked_sacked:">the amount of new data acknowledged by
+            an ACK [B]</t>
+
+            <t hangText="ece_delta:">the amount of newly acknowledged data
+            that was ECN-marked [B]</t>
+
+            <t hangText="ai_per_rtt:">additive increase to apply per RTT
+            [B]</t>
+
+            <t hangText="srtt:">Smoothed round trip time [s]</t>
+
+            <t hangText="MAX_BURST_DELAY:">Maximum allowed bottleneck queuing
+            delay due to segmentation offload bursts [s] (default 0.25 ms for
+            the public Internet)</t>
+          </list></t>
+      </section>
+    </section>
+
+    <section anchor="pracc_l4s" title="Bigger Picture - L4S Overview">
+      <t/>
+
+      <section title="Low Queuing Delay and High Utilization">
+        <t>{ToDo: Copy largely from netdev Prague paper}</t>
+      </section>
+
+      <section title="Immediate Explicit Congestion Notification">
+        <t>{ToDo: Copy largely from netdev Prague paper}</t>
+      </section>
+
+      <section title="Scaling with Flow Rate">
+        <t>{ToDo: Copy largely from netdev Prague paper}</t>
+      </section>
+
+      <section title="Coexistence with Existing Traffic">
+        <t>{ToDo: Copy largely from netdev Prague paper}</t>
+      </section>
+
+      <section title="The Prague L4S Requirements">
+        <t>{ToDo: Copy largely from netdev Prague paper}</t>
+      </section>
+    </section>
+
+    <section title="DCTCP: Brief Recap">
+      <t>{ToDo}</t>
+    </section>
+
+    <section anchor="pracc_prague_cc" title="Prague Congestion Control">
+      <t/>
+
+      <section anchor="pracc_pkt_id" title="Packet Identification (L4S Req.)">
+        <t>This section addresses Req 4.1. [xref-ecn-l4s-id].</t>
+
+        <t>On the public Internet, a sender using the Prague CC MUST set the
+        ECT(1) codepoint on all the packets it sends, in order to identify
+        itself as an L4S-capable congestion control [xref-ecn-l4s-id].</t>
+
+        <t>This applies whatever the transport protocol, whether TCP, QUIC,
+        RTP, etc. In the case of TCP, unlike an RFC 3168 TCP ECN transport, a
+        sender can set all packets as ECN-capable, including TCP control
+        packets and retransmissions [xref-RFC8311] [xref-generalized-ecn].</t>
+
+        <t>The Prague CC SHOULD optionally be configurable to use the ECT(0)
+        codepoint in private networks, such as data centres, which might be
+        necessary for backward compatibility with DCTCP deployments where
+        ECT(1) might already have another usage.</t>
+      </section>
+
+      <section title="Detecting and Measuring Congestion">
+        <t/>
+
+        <section title="Accurate ECN Feedback">
+          <t>This section addresses Req 4.2. [xref-ecn-l4s-id].</t>
+
+          <t>When ECN feedback was first added to TCP [xref-RFC3168], it was
+          incapable of signalling more than one congestion notification per
+          round trip. The TCP wire protocol has since been updated to allow
+          more accurate feedback [xref-accECN]. Therefore, in the case where a
+          sender uses the Prague CC over TCP, whether as client or
+          server:<list style="symbols">
+              <t>it MUST itself support AccECN;</t>
+
+              <t>during the handshake, it MUST also check whether its peer
+              supports accurate ECN feedback.</t>
+            </list>If the peer does not support accurate ECN feedback, the
+          sender MUST fall back to a Reno-friendly CC behaviour for the rest
+          of the connection. The non-Prague TCP sender MUST then no longer set
+          ECT(1) on the packets it sends. Note that a sending TCP client that
+          uses the Prague CC can set ECT(1) on the SYN prior to checking
+          whether the other peer supports AccECN (as long as it follows the
+          procedure in [xref-generalized-ecn] if it discovers the peer does
+          not support AccECN).</t>
+
+          <t>When ECN feedback was added to other transport protocols, such as
+          QUIC [xref-quic-transport] , RTP [xref-rtp-transport] and DCCP
+          [xref-dccp], it was accurate from day one. Therefore, with these
+          transports, Prague CC can be used without a handshake check for ECN
+          feedback support.</t>
+        </section>
+
+        <section anchor="pracc_moving_avg"
+                 title="Moving Average of ECN Feedback">
+          <t>Every round trip, the Prague CC measures the fraction, frac, of
+          ACKed bytes that carried ECN feedback over the previous round trip.
+          It then updates an exponentially weighted moving average (EWMA) of
+          this fraction, which is called alpha, using the following
+          algorithm:<list style="empty">
+              <t>alpha += g * (frac - alpha);</t>
+            </list>where g is the gain of the EWMA (default 1/16).</t>
+
+          <t>Currently this approach, which was inherited from DCTCP, is the
+          default in the Prague CC. However, other approaches are being
+          investigated, because this approach introduces multiple rounds of
+          delay into the congestion response. As well as the inherent round
+          trip of feedback delay, it introduces another round trip of delay
+          while the Prague CC measures frac, before it can even start to
+          respond to a change in congestion. And then the EWMA adds further
+          rounds of sluggishness.</t>
+
+          <t><list style="hanging">
+              <t hangText="Implementation note:">DCTCP is intended to maintain
+              alpha in the same way, but a mistake in its integer arithmetic
+              causes alpha to stick at too high a value if a flow scales to a
+              high bandwidth-delay product (BDP). This causes DCTCP's sawteeth
+              to grow as BDP scales, which loses the low-queuing-delay
+              high-utilization intent of the algorithm.<vspace
+              blankLines="1"/>The integer arithmetic in the Prague CC
+              implementation has been corrected (a back-port to DCTCP was
+              offered to the Linux mainline branch but declined). The solution
+              is simply to maintain upscaled_alpha = alpha/g instead of
+              alpha:<list style="empty">
+                  <t>upscaled_alpha += frac - g * upscaled_alpha;</t>
+                </list></t>
+            </list></t>
+        </section>
+
+        <section title="Scaling Loss Detection with Flow Rate">
+          <t>This section addresses the 'time-based units' aspect of Req 4.3.
+          [xref-ecn-l4s-id].</t>
+
+          <t>{ToDo}</t>
+        </section>
+      </section>
+
+      <section title="Congestion Response Algorithm">
+        <t>In congestion avoidance phase, a Prague CC uses a similar additive
+        increase multiplicative decrease (AIMD) algorithm to DCTCP, but with
+        the following differences:</t>
+
+        <section title="Fall-Back on Loss">
+          <t>This section addresses the 'Fall-Back on Loss' aspect of Req 4.3.
+          [xref-ecn-l4s-id].</t>
+
+          <t>{ToDo}</t>
+        </section>
+
+        <section title="Multiplicative Decrease on ECN Feedback">
+          <t>This section addresses the 'Invariant Recovery Time' aspect of
+          Req 4.3. [xref-ecn-l4s-id].</t>
+
+          <t>The Prague CC maintains the moving average of ECN-marking, alpha,
+          once per round trip throughout a connection. However, it only
+          triggers a multiplicative decrease to its congestion window when it
+          actually receives an ACK carrying ECN feedback. Then it enters a
+          state called 'Congestion Window Reduced' (CWR) for one round trip,
+          during which it suppresses any further decreases, even if it
+          receives further ECN feedback.</t>
+
+          <t>The size of the multiplicative decrease depends on the prevailing
+          value of alpha as follows:<list style="empty">
+              <t>ssthresh = (1 - alpha/2) * cwnd;</t>
+            </list></t>
+
+          <t>where, with reference to the earlier discussion of integer
+          arithmetic precision, alpha = g * upscaled_alpha.</t>
+        </section>
+
+        <section title="Additive Increase and ECN Feedback">
+          <t>In contrast to its multiplicative decrease, and unlike DCTCP, the
+          Prague CC does not suppress additive increase during CWR state.
+          Instead, a Prague CC SHOULD apply additive increase in proportion to
+          the bytes delivered without ECN marking, irrespective of its CWR
+          state. Specifically, on each ACK,<figure>
+              <artwork><![CDATA[    cwnd += (acked_sacked - ece_delta) * ai_ack / cwnd;
+]]></artwork>
+            </figure>where:<list style="empty">
+              <t>acked_sacked is the number of new bytes acknowledged by the
+              ACK;</t>
+
+              <t>ece_delta is the number of newly acknowledge ECN-marked
+              bytes;</t>
+
+              <t>ai_ack is a scaling factor that is typically 1 except for
+              small RTTs (see <xref target="pracc_rtt_independence"/>)</t>
+            </list></t>
+
+          <t>This approach reduces additive increase as the marking
+          probability increases, which tends to keep the marking level
+          unsaturated (below 100%) [xref-tensions; S.3.1]. Under stable
+          conditions, Prague's congestion window then becomes proportional to
+          (1-p)/p, rather than 1/p. </t>
+
+          <t>If, instead, a Prague CC were to completely suppress additive
+          increase while in CWR state, at low BDPs its sawtooth amplitude
+          would increase and tend to under-utilize the link - just when
+          available capacity is already limited.</t>
+
+          <t><list style="hanging">
+              <t hangText="Implementation note:">In order to operate with a
+              permanent, (very) low, marking probability, the arithmetic
+              around cwnd ought to be updated to track a fractional value
+              alongside the integer part. This both improves precision,
+              avoiding avalanche effects as remainders are carried to the next
+              operation, and improves responsiveness, as the AQM at the
+              bottleneck can control the flow without drastic marking
+              probability increases. Also, integer rounding bias ought to be
+              removed from the multiplicative decrease calculation.</t>
+            </list>See also 'Faster than Additive Increase' (<xref
+          target="pracc_faster_ai"/>)</t>
+        </section>
+
+        <section anchor="pracc_rtt_independence"
+                 title="Reduced RTT Dependence">
+          <t>This section addresses the 'Reduced RTT bias' aspect of Req 4.3.
+          [xref-ecn-l4s-id].</t>
+
+          <t>{ToDo}</t>
+        </section>
+      </section>
+
+      <section title="Packet Pacing">
+        <t>The Prague CC SHOULD pace the packets it sends to avoid the queuing
+        delay that would otherwise be caused by bursts of packets. It does
+        this by spacing out the window of packets evenly over the round trip
+        time, using the following calculation of the pacing rate [b/s]:<figure>
+            <artwork><![CDATA[    pacing_rate = MTU_BITS * cwnd / srtt;
+    if (cwnd < ssthresh / 2)
+        pacing_rate *= 2;
+]]></artwork>
+          </figure></t>
+
+        <t>The test of cwnd checks whether the flow is in slow start phase. If
+        so, it doubles pacing_rate so that packets can be paced at twice the
+        rate of the previous round.</t>
+
+        <t>The Prague CC can use alternatives to the traditional slow-start
+        algorithm, which use different pacing (see <xref
+        target="pracc_flow_start"/>).</t>
+
+        <t>It becomes increasingly difficult for a machine to scale to higher
+        flow rates unless it is allowed to send packets in larger bursts, for
+        instance using segmentation offload. Happily, as flow rate scales up,
+        proportionately more packets can be allowed in a burst for the same
+        amount of queuing delay at the bottleneck. Therefore, the Prague CC
+        sends packets in a burst as long as it will not induce more than
+        MAX_BURST_DELAY of queuing at the bottleneck. From this constant and
+        the current pacing_rate, it calculates how many MTU-sized packets to
+        allow in a burst:<list style="empty">
+            <t>max_burst = pacing_rate * MAX_BURST_DELAY / MTU_BITS</t>
+          </list></t>
+      </section>
+
+      <section anchor="pracc_flow_start" title="Flow Start or Restart">
+        <t>{ToDo}</t>
+      </section>
+    </section>
+
+    <section title="Variants and Future Work">
+      <t/>
+
+      <section anchor="pracc_faster_ai" title="Faster than Additive Increase">
+        <t>{ToDo}</t>
+      </section>
+
+      <section title="Combination with Delay-Based Control">
+        <t>{ToDo: Integration between Prague CC and BBRv2}</t>
+      </section>
+
+      <section title="Fall-Back on Classic ECN">
+        <t>This section addresses the 'Coexistence with Classic ECN' aspect of
+        Req 4.3. [xref-ecn-l4s-id].</t>
+
+        <t>{ToDo}</t>
+      </section>
+
+      <section title="Scaling Down to Fractional Windows">
+        <t>This section addresses the 'Scaling to Low RTT' aspect of Req 4.3.
+        [xref-ecn-l4s-id].</t>
+
+        <t>{ToDo}</t>
+      </section>
+    </section>
+
+    <section anchor="pracc_IANA" title="IANA Considerations">
+      <t>This specification contains no IANA considerations.</t>
+    </section>
+
+    <section anchor="pracc_Security_Considerations"
+             title="Security Considerations">
+      <t>{ToDo: mention minimum window as a protection against unresponsive
+      flows; and requirement to be responsive and minimize queuing delay
+      [xref-l4s-arch]}</t>
+    </section>
+
+    <section title="Acknowledgements">
+      <t>{ToDo} Tom Henderson, Olga Albisser, Joakim Misund.</t>
+
+      <t>The early contributions of Koen De Schepper, Bob Briscoe and Olga
+      Bondarenko were part-funded by the European Community under its Seventh
+      Framework Programme through the Reducing Internet Transport Latency
+      (RITE) project (ICT-317700). Bob Briscoe's contribution was also
+      part-funded by the Comcast Innovation Fund and the Research Council of
+      Norway through the TimeIn project. The views expressed here are solely
+      those of the authors.</t>
+    </section>
+
+    <section title="Contributors">
+      <t>{ToDo (this is just copied from dualq at the mo)}</t>
+
+      <t>The following contributed implementations and evaluations that
+      validated and helped to improve this specification:<list style="empty">
+          <t>Olga Albisser &lt;olga@albisser.org&gt; of Simula Research Lab,
+          Norway (Olga Bondarenko during early drafts) implemented the
+          prototype DualPI2 AQM for Linux with Koen De Schepper and conducted
+          extensive evaluations as well as implementing the live performance
+          visualization GUI <xref target="L4Sdemo16"/>.</t>
+
+          <t>Olivier Tilmans &lt;olivier.tilmans@nokia-bell-labs.com&gt; of
+          Nokia Bell Labs, Belgium prepared and maintains the Linux
+          implementation of DualPI2 for upstreaming.</t>
+
+          <t>Tom Henderson &lt;tomh@tomh.org&gt; of CableLabs, US implemented
+          various DualQ Coupled AQMs for ns3, including DualPI2 and DualPIE
+          over point to point and DOCSIS 3.1 link models and conducted
+          extensive evaluations.</t>
+
+          <t>Ing Jyh (Inton) Tsang of Nokia, Belgium built the End-to-End Data
+          Centre to the Home broadband testbed on which DualQ Coupled AQM
+          implementations were tested.</t>
+        </list></t>
+    </section>
+  </middle>
+
+  <!--  *****BACK MATTER ***** -->
+
+  <back>
+    <references title="Normative References {ToDo}">
+      <?rfc include='reference.RFC.2119'?>
+
+      <?rfc include='reference.RFC.3168'?>
+
+      <?rfc include='reference.RFC.8311'?>
+
+      <?rfc include='reference.I-D.ietf-tsvwg-ecn-l4s-id'?>
+    </references>
+
+    <references title="Informative References {ToDo}">
+      <?rfc include='reference.RFC.0970'?>
+
+      <?rfc include='reference.RFC.2309'?>
+
+      <?rfc include='reference.RFC.3246'?>
+
+      <?rfc include='reference.RFC.3649'?>
+
+      <?rfc include='reference.RFC.5033'?>
+
+      <?rfc include='reference.RFC.5348'?>
+
+      <?rfc include='reference.RFC.5681'?>
+
+      <?rfc include='reference.RFC.5706'?>
+
+      <?rfc include='reference.RFC.7567'?>
+
+      <?rfc include='reference.RFC.8033'?>
+
+      <?rfc include='reference.RFC.8034'?>
+
+      <?rfc include='reference.RFC.8257'?>
+
+      <?rfc include='reference.RFC.8298'?>
+
+      <?rfc include='reference.RFC.8290'?>
+
+      <?rfc include='reference.RFC.8312'?>
+
+      <reference anchor="ARED01" target="http://www.icir.org/floyd/red.html">
+        <front>
+          <title>Adaptive RED: An Algorithm for Increasing the Robustness of
+          RED's Active Queue Management</title>
+
+          <author fullname="Sally Floyd" initials="S." surname="Floyd">
+            <organization>ACIRI</organization>
+          </author>
+
+          <author fullname="Ramakrishna Gummadi" initials="R."
+                  surname="Gummadi">
+            <organization>ACIRI</organization>
+          </author>
+
+          <author fullname="S. Shenker" initials="S." surname="Shenker">
+            <organization>ACIRI</organization>
+          </author>
+
+          <date month="August" year="2001"/>
+        </front>
+
+        <seriesInfo name="ACIRI Technical Report" value=""/>
+
+        <format target="http://www.icir.org/floyd/red.html" type="PDF"/>
+      </reference>
+
+      <?rfc include='reference.I-D.ietf-tsvwg-l4s-arch'?>
+
+      <?rfc include='reference.I-D.ietf-tsvwg-nqb'?>
+
+      <?rfc include='reference.I-D.briscoe-tsvwg-l4s-diffserv'?>
+
+      <?rfc include='reference.I-D.briscoe-docsis-q-protection'?>
+
+      <reference anchor="BBRv1"
+                 target="https://tools.ietf.org/html/draft-cardwell-iccrg-bbr-congestion-control-00">
+        <front>
+          <title>BBR Congestion Control</title>
+
+          <author fullname="Neal Cardwell" initials="N." surname="Cardwell">
+            <organization>Google</organization>
+          </author>
+
+          <author fullname="Yuchung Cheng" initials="Y." surname="Cheng">
+            <organization>Google</organization>
+          </author>
+
+          <author fullname="Soheil Hassas Yeganeh" initials="S. "
+                  surname="Hassas Yeganeh">
+            <organization>Google</organization>
+          </author>
+
+          <author fullname="Van Jacobson" initials="V." surname="Jacobson">
+            <organization>Google</organization>
+          </author>
+
+          <date month="July" year="2017"/>
+        </front>
+
+        <seriesInfo name="Internet Draft"
+                    value="draft-cardwell-iccrg-bbr-congestion-control-00"/>
+
+        <format target="https://tools.ietf.org/html/draft-cardwell-iccrg-bbr-congestion-control-00"
+                type="HTML"/>
+      </reference>
+
+      <reference anchor="Mathis09"
+                 target="http://www.hpcc.jp/pfldnet2009/Program_files/1569198525.pdf">
+        <front>
+          <title>Relentless Congestion Control</title>
+
+          <author fullname="Matt Mathis" initials="M." surname="Mathis">
+            <organization>PSC</organization>
+          </author>
+
+          <date month="May" year="2009"/>
+        </front>
+
+        <seriesInfo name="PFLDNeT'09" value=""/>
+
+        <format target="http://www.hpcc.jp/pfldnet2009/Program_files/1569198525.pdf"
+                type="PDF"/>
+      </reference>
+
+      <!--{ToDo: DCttH ref will need to be updated, once stable}-->
+
+      <reference anchor="DCttH15" target="http://riteproject.eu/publications/">
+        <front>
+          <title>`Data Centre to the Home': Ultra-Low Latency for All</title>
+
+          <author fullname="Koen De Schepper" initials="K."
+                  surname="De Schepper">
+            <organization>Nokia Bell Labs</organization>
+          </author>
+
+          <author fullname="Olga Bondarenko" initials="O."
+                  surname="Bondarenko">
+            <organization>Simula Research Lab</organization>
+          </author>
+
+          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
+            <organization>BT</organization>
+          </author>
+
+          <author fullname="Ing-jyh Tsang" initials="I." surname="Tsang">
+            <organization>Nokia Bell Labs</organization>
+          </author>
+
+          <date year="2015"/>
+        </front>
+
+        <seriesInfo name="RITE project Technical Report" value=""/>
+
+        <format target="https://riteproject.files.wordpress.com/2019/06/dctth_preprint.pdf"
+                type="PDF"/>
+      </reference>
+
+      <reference anchor="PI2"
+                 target="https://riteproject.files.wordpress.com/2015/10/pi2_conext.pdf">
+        <front>
+          <title>PI2: A Linearized AQM for both Classic and Scalable
+          TCP</title>
+
+          <author fullname="Koen De Schepper" initials="K."
+                  surname="De Schepper">
+            <organization>Nokia Bell Labs</organization>
+          </author>
+
+          <author fullname="Olga Bondarenko" initials="O."
+                  surname="Bondarenko">
+            <organization>Simula Research Lab</organization>
+          </author>
+
+          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
+            <organization>BT</organization>
+          </author>
+
+          <author fullname="Ing-jyh Tsang" initials="I." surname="Tsang">
+            <organization>Nokia Bell Labs</organization>
+          </author>
+
+          <date month="December" year="2016"/>
+        </front>
+
+        <seriesInfo name="ACM CoNEXT'16" value=""/>
+
+        <format target="https://riteproject.files.wordpress.com/2015/10/pi2_conext.pdf"
+                type="PDF"/>
+      </reference>
+
+      <reference anchor="L4Sdemo16"
+                 target="http://dl.acm.org/citation.cfm?doid=2910017.2910633 (videos of demos: https://riteproject.eu/dctth/#1511dispatchwg )">
+        <front>
+          <title>Ultra-Low Delay for All: Live Experience, Live
+          Analysis</title>
+
+          <author fullname="Olga Bondarenko" initials="O."
+                  surname="Bondarenko">
+            <organization>Simula Research Lab</organization>
+          </author>
+
+          <author fullname="Koen De Schepper" initials="K."
+                  surname="De Schepper">
+            <organization>Bell Labs</organization>
+          </author>
+
+          <author fullname="Ing-jyh Tsang" initials="I." surname="Tsang">
+            <organization>Bell Labs</organization>
+          </author>
+
+          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
+            <organization>BT</organization>
+          </author>
+
+          <date month="May" year="2016"/>
+        </front>
+
+        <seriesInfo name="Proc. MMSYS'16" value="pp33:1--33:4"/>
+
+        <format target="http://dl.acm.org/citation.cfm?doid=2910017.2910633"
+                type="PDF"/>
+      </reference>
+
+      <!--      <reference anchor="DCTCP_Pitfalls"
+                 target="http://blogs.usenix.org/conference/nsdi15/technical-sessions/presentation/judd">
+        <front>
+          <title>Attaining the Promise and Avoiding the Pitfalls of TCP in the
+          Datacenter</title>
+
+          <author fullname="Glenn Judd" initials="G." surname="Judd">
+            <organization>Morgan Stanley</organization>
+          </author>
+
+          <date month="May" year="2015"/>
+        </front>
+
+        <seriesInfo name="12th USENIX Symposium on Networked Systems Design and Implementation (NSDI 15)"
+                    value="145-157"/>
+
+        <format target="http://blogs.usenix.org/conference/nsdi15/technical-sessions/presentation/judd"
+                type="PDF"/>
+      </reference>
+-->
+
+      <reference anchor="CRED_Insights"
+                 target="https://arxiv.org/abs/1904.07339">
+        <front>
+          <title>Insights from Curvy RED (Random Early Detection)</title>
+
+          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
+            <organization>BT</organization>
+          </author>
+
+          <date day="" month="July" year="2015"/>
+        </front>
+
+        <seriesInfo name="BT Technical Report"
+                    value="TR-TUB8-2015-003 arXiv:1904.07339 [cs.NI]"/>
+
+        <format target="https://arxiv.org/pdf/1904.07339" type="PDF"/>
+      </reference>
+
+      <reference anchor="CoDel"
+                 target="http://queue.acm.org/issuedetail.cfm?issue=2208917">
+        <front>
+          <title>Controlling Queue Delay</title>
+
+          <author fullname="Kathleen Nichols" initials="K." surname="Nichols">
+            <organization>PARC</organization>
+          </author>
+
+          <author fullname="Van Jacobson" initials="V." surname="Jacobson">
+            <organization>Pollere Inc</organization>
+          </author>
+
+          <date month="May" year="2012"/>
+        </front>
+
+        <seriesInfo name="ACM Queue" value="10(5)"/>
+
+        <format target="http://queue.acm.org/issuedetail.cfm?issue=2208917"
+                type="HTML"/>
+      </reference>
+
+      <reference anchor="MEDF">
+        <front>
+          <title>MEDF - a simple scheduling algorithm for two real-time
+          transport service classes with application in the UTRAN</title>
+
+          <author fullname="Michael Menth " initials="M." surname="Menth">
+            <organization>University of Wuerzburg</organization>
+          </author>
+
+          <author fullname="Matthias Schmid " initials="M." surname="Schmid">
+            <organization>Infosim AG</organization>
+          </author>
+
+          <author fullname="Herbert Heiss" initials="H." surname="Heiss">
+            <organization>Siemens</organization>
+          </author>
+
+          <author fullname="Thomas Reim" initials="T." surname="Reim">
+            <organization>Siemens</organization>
+          </author>
+
+          <date month="March" year="2003"/>
+        </front>
+
+        <seriesInfo name="Proc. IEEE Conference on Computer Communications (INFOCOM'03)"
+                    value="Vol.2 pp.1116-1122"/>
+
+        <format target="http://infocom2003.ieee-infocom.org/papers/27_04.PDF"
+                type="PDF"/>
+      </reference>
+
+      <reference anchor="DualQ-Test">
+        <front>
+          <title>Destruction Testing: Ultra-Low Delay using Dual Queue Coupled
+          Active Queue Management</title>
+
+          <author fullname="Henrik Steen" initials="H." surname="Steen">
+            <organization>Uni Oslo</organization>
+          </author>
+
+          <date month="May" year="2017"/>
+        </front>
+
+        <seriesInfo name="Masters Thesis, Dept of Informatics, Uni Oslo"
+                    value=""/>
+
+        <format target="https://www.duo.uio.no/bitstream/handle/10852/57424/thesis-henrste.pdf?sequence=1"
+                type="PDF"/>
+      </reference>
+
+      <reference anchor="SigQ-Dyn" target="https://arxiv.org/abs/1904.07044">
+        <front>
+          <title>Rapid Signalling of Queue Dynamics</title>
+
+          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
+            <organization/>
+          </author>
+
+          <date month="September" year="2017"/>
+        </front>
+
+        <seriesInfo name="Technical Report"
+                    value="TR-BB-2017-001 arXiv:1904.07044 [cs.NI]"/>
+
+        <format target="https://arxiv.org/pdf/1904.07044" type="PDF"/>
+      </reference>
+
+      <reference anchor="Alizadeh-stability"
+                 target="https://dl.acm.org/citation.cfm?id=1993753">
+        <front>
+          <title>Analysis of DCTCP: Stability, Convergence, and
+          Fairness</title>
+
+          <author fullname="Mohamed Alizadeh" initials="M." surname="Alizadeh"/>
+
+          <author fullname="Adel Javanmard" initials="A." surname="Javanmard"/>
+
+          <author fullname="Balaji Prabhakar" initials="B."
+                  surname="Prabhakar"/>
+
+          <date month="June" year="2011"/>
+        </front>
+
+        <seriesInfo name="ACM SIGMETRICS 2011" value=""/>
+
+        <format target="https://people.csail.mit.edu/alizadeh/papers/dctcp_analysis-sigmetrics11.pdf"
+                type="PDF"/>
+      </reference>
+
+      <reference anchor="PragueLinux"
+                 target="https://www.netdevconf.org/0x13/session.html?talk-tcp-prague-l4s">
+        <front>
+          <title>Implementing the `TCP Prague' Requirements for Low Latency
+          Low Loss Scalable Throughput (L4S)</title>
+
+          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
+            <organization>Independent</organization>
+          </author>
+
+          <author fullname="Koen De Schepper" initials="K."
+                  surname="De Schepper">
+            <organization>Nokia Bell Labs</organization>
+          </author>
+
+          <author fullname="Olga Albisser" initials="O." surname="Albisser">
+            <organization>Simula Research Lab</organization>
+          </author>
+
+          <author fullname="Joakim Misund" initials="J." surname="Misund">
+            <organization>Simula Research Lab</organization>
+          </author>
+
+          <author fullname="Olivier Tilmans" initials="O." surname="Tilmans">
+            <organization>Nokia Bell Labs</organization>
+          </author>
+
+          <author fullname="Mirja K&uuml;hlewind" initials="M."
+                  surname="K&uuml;hlewind">
+            <organization>ETH Zurich</organization>
+          </author>
+
+          <author fullname="Asad Sajjad Ahmed" initials="A.S." surname="Ahmed">
+            <organization>Simula Research Lab</organization>
+          </author>
+
+          <date month="March" year="2019"/>
+        </front>
+
+        <seriesInfo name="Proc. Linux Netdev 0x13" value=""/>
+
+        <format target="https://www.files.netdevconf.org/f/4d6939d5f1fb404fafd1/?dl=1"
+                type="PDF"/>
+      </reference>
+
+      <reference anchor="DualPI2Linux"
+                 target="https://www.netdevconf.org/0x13/session.html?talk-DUALPI2-AQM">
+        <front>
+          <title>DUALPI2 - Low Latency, Low Loss and Scalable (L4S)
+          AQM</title>
+
+          <author fullname="Olga Albisser" initials="O." surname="Albisser">
+            <organization>Simula Research Lab</organization>
+          </author>
+
+          <author fullname="Koen De Schepper" initials="K."
+                  surname="De Schepper">
+            <organization>Nokia Bell Labs</organization>
+          </author>
+
+          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
+            <organization>Independent</organization>
+          </author>
+
+          <author fullname="Olivier Tilmans" initials="O." surname="Tilmans">
+            <organization>Nokia Bell Labs</organization>
+          </author>
+
+          <author fullname="Henrik Steen" initials="H." surname="Steen">
+            <organization>Simula Research Lab</organization>
+          </author>
+
+          <date month="March" year="2019"/>
+        </front>
+
+        <seriesInfo name="Proc. Linux Netdev 0x13" value=""/>
+
+        <format target="https://www.files.netdevconf.org/f/febbe8c6a05b4ceab641/?dl=1"
+                type="PDF"/>
+      </reference>
+
+      <reference anchor="DOCSIS3.1"
+                 target="https://specification-search.cablelabs.com/CM-SP-MULPIv3.1">
+        <front>
+          <title>MAC and Upper Layer Protocols Interface (MULPI)
+          Specification, CM-SP-MULPIv3.1</title>
+
+          <author fullname="" surname="">
+            <organization>CableLabs</organization>
+          </author>
+
+          <date day="21" month="January" year="2019"/>
+        </front>
+
+        <seriesInfo name="Data-Over-Cable Service Interface Specifications DOCSIS&reg; 3.1"
+                    value="Version i17 or later"/>
+
+        <format target="https://specification-search.cablelabs.com/CM-SP-MULPIv3.1"
+                type="PDF"/>
+      </reference>
+
+      <reference anchor="LLD"
+                 target="https://cablela.bs/low-latency-docsis-technology-overview-february-2019">
+        <front>
+          <title>Low Latency DOCSIS: Technology Overview</title>
+
+          <author fullname="Greg White" initials="G." surname="White">
+            <organization>CableLabs</organization>
+          </author>
+
+          <author fullname="Karthik Sundaresan" initials="K."
+                  surname="Sundaresan">
+            <organization>CableLabs</organization>
+          </author>
+
+          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
+            <organization>CableLabs</organization>
+          </author>
+
+          <date day="" month="February" year="2019"/>
+        </front>
+
+        <seriesInfo name="CableLabs White Paper" value=""/>
+
+        <format target="https://cablela.bs/low-latency-docsis-technology-overview-february-2019"
+                type="PDF"/>
+      </reference>
+
+      <reference anchor="AQMmetrics"
+                 target="https://www.cs.purdue.edu/homes/fahmy/papers/ldc.pdf">
+        <front>
+          <title>A Comparison of Load-based and Queue- based Active Queue
+          Management Algorithms</title>
+
+          <author fullname="Minseok Kwon" initials="M." surname="Kwon">
+            <organization>Purdue Uni</organization>
+          </author>
+
+          <author fullname="Sonia Fahmy" initials="S." surname="Fahmy">
+            <organization>Purdue Uni</organization>
+          </author>
+
+          <date year="2002"/>
+        </front>
+
+        <seriesInfo name="Proc. Int'l Soc. for Optical Engineering (SPIE)"
+                    value="4866:35--46 DOI: 10.1117/12.473021"/>
+      </reference>
+    </references>
+
+    <section title="{ToDo}">
+      <t>Delete if not needed.</t>
+    </section>
+
+    <!--    <section title="Open Issues">
+      <t>Minor open issues are tagged '{ToDo}' at the appropriate point in the
+      document. Major open issues are listed below:<list>
+          <t>None</t>
+        </list></t>
+    </section>
+
+    <section title="Change Log (to be Deleted before Publication)">
+      <t>A detailed version history can be accessed at
+      &lt;http://datatracker.ietf.org/doc/draft-briscoe-aqm-ecn-roadmap/history/&gt;</t>
+
+      <t><list style="hanging">
+          <t hangText="From briscoe-...-00 to briscoe-...-01:">Technical
+          changes:<list style="symbols">
+              <t/>
+            </list>Editorial changes:<list style="symbols">
+              <t/>
+            </list></t>
+        </list></t>
+    </section>
+-->
+  </back>
+</rfc>
