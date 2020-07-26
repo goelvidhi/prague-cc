@@ -385,17 +385,22 @@
           This practice unnecessarily tightens reordering intolerance as flow
           rate scales over the years. Instead, a Prague CC SHOULD wait until a
           certain fraction of the RTT has elapsed before it deems that the gap
-          is due to packet loss. The reference implementation TCP Prague in
-          Linux uses RACK [xref-RACK] to satisfy this requirement.</t>
+          is due to packet loss.</t>
+
+          <t>The reference implementation TCP Prague in Linux uses RACK
+          [xref-RACK] to satisfy this requirement, although at the start of a
+          connection RACK counts 3 DupACKs to detect loss because the early
+          smoothed RTT can be inaccurate. The start-up behaviour of the
+          reference implementation is not yet set in stone (see <xref
+          target="pracc_flow_start"/>), so its loss detection behaviour during
+          start-up is yet to be specified.</t>
 
           <t>A Prague CC MAY detect loss by counting a number of duplicate
-          ACKs if the number is derived at run-time from the RTT, rather than
-          hard-coded. For instance, if the initial window of 10 segments was
-          paced evenly across the initial RTT, then an implementation can wait
-          for n/10 of the RTT by counting n DupACKs. For example, it could
-          wait 40% of the RTT by counting 4 DupACKs. But, if the IW had not
-          been paced, it would have to count time directly, rather than
-          counting DupACKs.</t>
+          ACKs as long as the number is derived in some way from time, rather
+          than hard-coded. For instance, if the initial window of 10 segments
+          was paced evenly across the initial RTT then, in the next round, an
+          implementation that deems there has been a loss after (say) 1/4 of
+          an RTT can count 1/4 of 10 = 3 DupACKs (rounded up). </t>
         </section>
       </section>
 
