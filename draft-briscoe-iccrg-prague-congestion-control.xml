@@ -207,7 +207,7 @@
 
             <t hangText="CC:">Congestion Control</t>
 
-            <t hangText="ACK:">an ACKnowledgement</t>
+            <t hangText="ACK:">an ACKnowledgement, or to ACKnowledge</t>
 
             <t hangText="EWMA:">Exponentially Weighted Moving Average</t>
 
@@ -221,8 +221,11 @@
 
             <t hangText="ssthresh:">Slow start threshold [B]</t>
 
-            <t hangText="p:">Probability of drop or marking detected by the CC
-            algorithm []</t>
+            <t hangText="inflight:">The amount of data that the sender has
+            sent but not yet received ACKs for [B]</t>
+
+            <t hangText="p:">Steady-state probability of drop or marking
+            []</t>
 
             <t hangText="alpha:">EWMA of the ECN marking fraction []</t>
 
