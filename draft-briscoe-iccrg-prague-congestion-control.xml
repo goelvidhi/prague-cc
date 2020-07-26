@@ -416,10 +416,10 @@
           <t>A Prague CC MUST fall back to Reno-friendly behaviour on
           detection of a loss.</t>
 
-          <t>If a Prague CC has already reduced cwnd less than a round trip
-          before it detects a loss, it MAY reduce cwnd by a smaller amount due
-          to the loss, as long as the reductions due to ECN and the loss are
-          Reno-friendly when taken together. See <xref
+          <t>If a Prague CC has already reduced cwnd due to ECN feedback less
+          than a round trip before it detects a loss, it MAY reduce cwnd by a
+          smaller amount due to the loss, as long as the reductions due to ECN
+          and the loss are Reno-friendly when taken together. See <xref
           target="pracc_delay-based"/> for discussion of congestion control
           using a combination of delay, ECN and loss.</t>
 
