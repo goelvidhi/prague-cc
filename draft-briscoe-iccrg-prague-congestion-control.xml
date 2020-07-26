@@ -126,7 +126,7 @@
 
   <middle>
     <section anchor="pracc_intro" title="Introduction">
-      <t>{ToDo: Copy largely from netdev Prague paper}</t>
+      <t>{ToDo: Copy largely from netdev Prague paper (not too elaborate)}</t>
 
       <section anchor="pracc_motivation"
                title="Motivation: Low Delay /and/ High Bandwidth">
@@ -147,9 +147,7 @@
         target="RFC2119"/> when, and only when, they appear in all capitals,
         as shown here.</t>
 
-        <t>The DualQ Coupled AQM uses two queues for two services. Each of the
-        following terms identifies both the service and the queue that
-        provides the service:<list style="hanging">
+        <t>Definitions of terms used:<list style="hanging">
             <t hangText="Classic Congestion Control:">A congestion control
             behaviour that can co-exist with standard TCP Reno <xref
             target="RFC5681"/> without causing significantly negative impact
