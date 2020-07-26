@@ -413,7 +413,22 @@
           <t>This section addresses the 'Fall-Back on Loss' aspect of Req 4.3.
           [xref-ecn-l4s-id].</t>
 
-          <t>{ToDo}</t>
+          <t>A Prague CC MUST fall back to Reno-friendly behaviour on
+          detection of a loss.</t>
+
+          <t>If a Prague CC has already reduced cwnd less than a round trip
+          before it detects a loss, it MAY reduce cwnd by a smaller amount due
+          to the loss, as long as the reductions due to ECN and the loss are
+          Reno-friendly when taken together. See <xref
+          target="pracc_delay-based"/> for discussion of congestion control
+          using a combination of delay, ECN and loss.</t>
+
+          <t><list style="hanging">
+              <t hangText="Implementation note:">A Prague CC cannot rely on
+              the fall-back-on-loss behaviour of the DCTCP code in the Linux
+              kernel prior to v5.1, due to a bug in the fast retransmit code
+              (but not in the retransmission timeout code).</t>
+            </list></t>
         </section>
 
         <section title="Multiplicative Decrease on ECN Feedback">
@@ -569,7 +584,8 @@
         <t>{ToDo}</t>
       </section>
 
-      <section title="Combination with Delay-Based Control">
+      <section anchor="pracc_delay-based"
+               title="Combination with Delay-Based Control">
         <t>{ToDo: Integration between Prague CC and BBRv2}</t>
       </section>
 
