@@ -205,6 +205,8 @@
 
             <t hangText="ssthresh:">Slow start threshold [B]</t>
 
+            <t hangText="p:">Probability of drop or marking detected by the CC algorithm []</t>
+
             <t hangText="alpha:">EWMA of the ECN marking fraction []</t>
 
             <t hangText="acked_sacked:">the amount of new data acknowledged by
@@ -325,8 +327,23 @@
           respond to a change in congestion. And then the EWMA adds further
           rounds of sluggishness.</t>
 
-          <t><list style="hanging">
-              <t hangText="Implementation note:">DCTCP is intended to maintain
+          <t>Implementation notes compared to Linux DCTCP:<list style="hanging">
+              <t hangText="Alpha rounding:">From release xx onwards, Linux DCTCP 
+              applied a reset to zero when the EWMA was not able to 
+              further reduce its alpha value. Since the alpha resolution 
+              was only 10 bits and the EWMA uses a 4 bits shift a left-over
+              alpha value up to 15 is expected. At the same time it is hard to 
+              get alpha to a value that is high enough to be kept by the EWMA
+              algorithm, as it is also shifted by 4 bits, it needs to be at 
+              least a value of 16 (>~1%). Additionally resetting alpha to 0
+              delays the response with one RTT as in a first RTT no reduction
+              takes place. Due to the reset to zero, it was shown that on a
+              random marker AQM, the marking probability was driven as high 
+              as 10%. When the left-over value was kept, DCTCP and Prague 
+              responded as expected to the 1/p.</t>
+              <t hangText="Alpha scale:">To avoid the above problem Prague CC
+                  uses an alpha scale of 32 bits, and uses an adapted integer
+                  arithmetic. DCTCP is intended to maintain
               alpha in the same way, but a mistake in its integer arithmetic
               causes alpha to stick at too high a value if a flow scales to a
               high bandwidth-delay product (BDP). This causes DCTCP's sawteeth
@@ -386,8 +403,8 @@
         <section title="Additive Increase and ECN Feedback">
           <t>In contrast to its multiplicative decrease, and unlike DCTCP, the
           Prague CC does not suppress additive increase during CWR state.
-          Instead, a Prague CC SHOULD apply additive increase in proportion to
-          the bytes delivered without ECN marking, irrespective of its CWR
+          Instead, a Prague CC {SHOULD apply}->(KDS: or is it just applies... do we inform or require?) 
+          additive increase only for ACKed bytes without ECN marking, irrespective of its CWR
           state. Specifically, on each ACK,<figure>
               <artwork><![CDATA[    cwnd += (acked_sacked - ece_delta) * ai_ack / cwnd;
 ]]></artwork>
@@ -432,7 +449,37 @@
           <t>This section addresses the 'Reduced RTT bias' aspect of Req 4.3.
           [xref-ecn-l4s-id].</t>
 
-          <t>{ToDo}</t>
+          <t>The DCTCP AIMD algoritm is roughly inversely proportional to RTT 
+              (rate =~ 1/RTT) and has 2 modes of operation for the marking probability p, depending on whether 
+              it is controlled by an immediate STEP AQM (on/off mode where rate =~ 1/p²)
+              or by random marker (where rate =~ 1/p). To completely remove the RTT 
+              factor from the equation in both modes, and to be compatible with a 
+              specific reference RTT RR, both the window update period and the 
+              alpha calculation period are (MUST be?) aligned with RR instead of 
+              the real measured RTT.</t>
+
+            <t>Additionally to make sure the same AI (1 segment per RR) is applied 
+              over a shorter RTT, only RTT/RR segment fractions will be added per RR.
+              In effect this will result in only one extra segment per RR/RTT RTTs.
+              The increase algorithm is reusing the fractional increase value as
+              explained in the previous topic. 
+              Similar for longer RTTs than RR, RTT/RR segments would need to be 
+              added per RR. The current Prague implementation does not support this
+              faster AI for RTTs longer than RR, due to expected (though never evaluated) impact on latency 
+              overshoot and slowed responsiveness. As an alternative a good aproach 
+              would be to only track and support the random marking response (1/p)
+              as an on/off response (1/p²) is only applicable for the lowest competing RTTs.</t>
+            
+            <t>The Linux Prague implementation uses a RR = f(RTT) to determin the reference RTT
+              from the measured RTT. It implements 3 functions: f(RTT) = max(RTT, RR); f(RTT) = ... {ToDo}</t>
+                
+            <t>To benefit from lower base RTTs the Reduced RTT Dependence algorithm
+              only becomes gradual effective after a configurable amount D RTTs (default 50).
+              This means that initially the flow is as slow start responsive and gets an initial
+              throughput based on its real RTT. Only after D RTTs the throughput will 
+              converge to the equal rate. The benefit is that short flows (mices) will get priority
+              over longer flows. An idle reset time can be added. {to be verified...}</t>
+            
         </section>
       </section>
 
