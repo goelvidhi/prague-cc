@@ -365,13 +365,13 @@
               algorithm.</t>
 
               <t hangText="Upscaled alpha in Prague CC:">To resolve the above
-              problem the implementation of TCP Prague in Linux uses 32 bits
+              problem the implementation of TCP Prague in Linux uses 20 bits
               for alpha, and it maintains upscaled_alpha = alpha/g instead of
               alpha:<list style="empty">
                   <t>upscaled_alpha += frac - g * upscaled_alpha;</t>
                 </list>This technique is the same as Linux uses for srtt and
               mdev. A back-port to DCTCP was offered for the Linux mainline
-              branch but declined.</t>
+              branch but declined [xref- upscaled-alpha-patch].</t>
             </list></t>
         </section>
 
@@ -427,7 +427,8 @@
               <t hangText="Implementation note:">A Prague CC cannot rely on
               the fall-back-on-loss behaviour of the DCTCP code in the Linux
               kernel prior to v5.1, due to a bug in the fast retransmit code
-              (but not in the retransmission timeout code).</t>
+              (but not in the retransmission timeout code)
+              [xref-dctcp-loss-patch].</t>
             </list></t>
         </section>
 
@@ -438,10 +439,9 @@
           <t>The Prague CC maintains the moving average of ECN-marking, alpha,
           once per round trip throughout a connection. However, it only
           triggers a multiplicative decrease to its congestion window when it
-          actually receives an ACK carrying ECN feedback. Then it enters a
-          state called 'Congestion Window Reduced' (CWR) for one round trip,
-          during which it suppresses any further decreases, even if it
-          receives further ECN feedback.</t>
+          actually receives an ACK carrying ECN feedback. Then it suppresses
+          any further decreases for one round trip, even if it receives
+          further ECN feedback.</t>
 
           <t>The size of the multiplicative decrease depends on the prevailing
           value of alpha as follows:<list style="empty">
@@ -453,13 +453,13 @@
         </section>
 
         <section title="Additive Increase and ECN Feedback">
-          <t>In contrast to its multiplicative decrease, and unlike DCTCP, the
-          Prague CC does not suppress additive increase during CWR state.
-          Instead, a Prague CC {SHOULD apply}-&gt;(KDS: or is it just
-          applies... do we inform or require?) additive increase only for
-          ACKed bytes without ECN marking, irrespective of its CWR state.
-          Specifically, on each ACK,<figure>
-              <artwork><![CDATA[    cwnd += (acked_sacked - ece_delta) * ai_ack / cwnd;
+          <t>Unlike DCTCP, the Prague CC does not suppress additive increase
+          for one round trip after a congestion window reduction. Instead, a
+          Prague CC {SHOULD apply}-&gt;(KDS: or is it just applies... do we
+          inform or require?) additive increase only for ACKed bytes without
+          ECN marking, irrespective of its CWR state. Specifically, on each
+          ACK,<figure>
+              <artwork><![CDATA[    cwnd += (acked_sacked - ece_delta) * ai_per_rtt / cwnd;
 ]]></artwork>
             </figure>where:<list style="empty">
               <t>acked_sacked is the number of new bytes acknowledged by the
@@ -545,7 +545,7 @@
         delay that would otherwise be caused by bursts of packets. It does
         this by spacing out the window of packets evenly over the round trip
         time, using the following calculation of the pacing rate [b/s]:<figure>
-            <artwork><![CDATA[    pacing_rate = MTU_BITS * cwnd / srtt;
+            <artwork><![CDATA[    pacing_rate = MTU_BITS * max(cwnd, inflight) / srtt;
     if (cwnd < ssthresh / 2)
         pacing_rate *= 2;
 ]]></artwork>
