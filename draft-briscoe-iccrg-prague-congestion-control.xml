@@ -162,7 +162,8 @@
         target="RFC2119"/> when, and only when, they appear in all capitals,
         as shown here.</t>
 
-        <t>Definitions of terms used:<list style="hanging">
+        <t>Definitions of terms used {ToDo: Currently inherited from dualq
+        draft - may need to prune}:<list style="hanging">
             <t hangText="Classic Congestion Control:">A congestion control
             behaviour that can co-exist with standard TCP Reno <xref
             target="RFC5681"/> without causing significantly negative impact
@@ -342,36 +343,33 @@
           respond to a change in congestion. And then the EWMA adds further
           rounds of sluggishness.</t>
 
-          <t>Implementation notes compared to Linux DCTCP:<list
-              style="hanging">
-              <t hangText="Alpha rounding:">From release xx onwards, Linux
-              DCTCP applied a reset to zero when the EWMA was not able to
-              further reduce its alpha value. Since the alpha resolution was
-              only 10 bits and the EWMA uses a 4 bits shift a left-over alpha
-              value up to 15 is expected. At the same time it is hard to get
-              alpha to a value that is high enough to be kept by the EWMA
-              algorithm, as it is also shifted by 4 bits, it needs to be at
-              least a value of 16 (&gt;~1%). Additionally resetting alpha to 0
-              delays the response with one RTT as in a first RTT no reduction
-              takes place. Due to the reset to zero, it was shown that on a
-              random marker AQM, the marking probability was driven as high as
-              10%. When the left-over value was kept, DCTCP and Prague
-              responded as expected to the 1/p.</t>
+          <t>Implementation notes:<list style="hanging">
+              <t hangText="Rounding problems in DCTCP:">In principle, Linux
+              DCTCP maintains the moving average 'alpha' using the same
+              formula as Prague CC uses (as above). Alpha is a fraction
+              between 0 and 1, and it needs to be represented with high
+              resolution because the larger the BDP of a flow, the smaller the
+              value that alpha converges to (in steady state alpha = 2/cwnd).
+              Linux represents alpha with a 10-bit integer (with resolution
+              1/1024). However, up to kernel release 3.19, Linux used integer
+              arithmetic that could not reduce alpha below 15/1024. Then it
+              was patched so that any value below 16/1024 was rounded down to
+              zero. For a flow with a higher bandwidth-delay product (BDP)
+              than 128 segments, this means that, alpha flip-flops. Once it
+              has flopped down to zero DCTCP becomes unresponsive until it has
+              built sufficient queue to flip up to 16/1024. For larger BDPs,
+              this causes DCTCP to induce larger sawteeth, which loses the
+              low-queuing-delay and high-utilization intent of the
+              algorithm.</t>
 
-              <t hangText="Alpha scale:">To avoid the above problem Prague CC
-              uses an alpha scale of 32 bits, and uses an adapted integer
-              arithmetic. DCTCP is intended to maintain alpha in the same way,
-              but a mistake in its integer arithmetic causes alpha to stick at
-              too high a value if a flow scales to a high bandwidth-delay
-              product (BDP). This causes DCTCP's sawteeth to grow as BDP
-              scales, which loses the low-queuing-delay high-utilization
-              intent of the algorithm.<vspace blankLines="1"/>The integer
-              arithmetic in the Prague CC implementation has been corrected (a
-              back-port to DCTCP was offered to the Linux mainline branch but
-              declined). The solution is simply to maintain upscaled_alpha =
-              alpha/g instead of alpha:<list style="empty">
+              <t hangText="Upscaled alpha in Prague CC:">To resolve the above
+              problem the implementation of TCP Prague in Linux uses 32 bits
+              for alpha, and it maintains upscaled_alpha = alpha/g instead of
+              alpha:<list style="empty">
                   <t>upscaled_alpha += frac - g * upscaled_alpha;</t>
-                </list></t>
+                </list>This technique is the same as Linux uses for srtt and
+              mdev. A back-port to DCTCP was offered for the Linux mainline
+              branch but declined.</t>
             </list></t>
         </section>
 
