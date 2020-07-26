@@ -502,12 +502,12 @@
           <t>This section addresses the 'Reduced RTT bias' aspect of Req 4.3.
           [xref-ecn-l4s-id].</t>
 
-          <t>The DCTCP AIMD algoritm is roughly inversely proportional to RTT
-          (rate =~ 1/RTT) and has 2 modes of operation for the marking
-          probability p, depending on whether it is controlled by an immediate
-          STEP AQM (on/off mode where rate =~ 1/p^2) or by random marker
-          (where rate =~ 1/p). To completely remove the RTT factor from the
-          equation in both modes, and to be compatible with a specific
+          <t>The DCTCP AIMD algoritm described so far is roughly inversely
+          proportional to RTT (rate =~ 1/RTT) and has 2 modes of operation for
+          the marking probability p, depending on whether it is controlled by
+          an immediate STEP AQM (on/off mode where rate =~ 1/p^2) or by random
+          marker (where rate =~ 1/p). To completely remove the RTT factor from
+          the equation in both modes, and to be compatible with a specific
           reference RTT RR, both the window update period and the alpha
           calculation period are (MUST be?) aligned with RR instead of the
           real measured RTT.</t>
