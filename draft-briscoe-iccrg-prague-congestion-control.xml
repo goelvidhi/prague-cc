@@ -205,6 +205,8 @@
             stands for ECN-Capable Transport and CE stands for Congestion
             Experienced.</t>
 
+            <t hangText="CC:">Congestion Control</t>
+
             <t hangText="ACK:">an ACKnowledgement</t>
 
             <t hangText="EWMA:">Exponentially Weighted Moving Average</t>
@@ -377,7 +379,23 @@
           <t>This section addresses the 'time-based units' aspect of Req 4.3.
           [xref-ecn-l4s-id].</t>
 
-          <t>{ToDo}</t>
+          <t>After an ACK leaves a gap in the sequence space, a Prague CC MUST
+          NOT deem that a loss has occurred by counting a hard-coded number of
+          duplicate ACKs, e.g. the 3 Dup-ACKs specified in [xref-RFC5681].
+          This practice unnecessarily tightens reordering intolerance as flow
+          rate scales over the years. Instead, a Prague CC SHOULD wait until a
+          certain fraction of the RTT has elapsed before it deems that the gap
+          is due to packet loss. The reference implementation TCP Prague in
+          Linux uses RACK [xref-RACK] to satisfy this requirement.</t>
+
+          <t>A Prague CC MAY detect loss by counting a number of duplicate
+          ACKs if the number is derived at run-time from the RTT, rather than
+          hard-coded. For instance, if the initial window of 10 segments was
+          paced evenly across the initial RTT, then an implementation can wait
+          for n/10 of the RTT by counting n DupACKs. For example, it could
+          wait 40% of the RTT by counting 4 DupACKs. But, if the IW had not
+          been paced, it would have to count time directly, rather than
+          counting DupACKs.</t>
         </section>
       </section>
 
