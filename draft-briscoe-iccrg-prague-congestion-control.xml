@@ -62,7 +62,7 @@
       </address>
     </author>
 
-    <author fullname="Olivier Tilmans" initials="K." surname="De Schepper">
+    <author fullname="Olivier Tilmans" initials="O." surname="Tilmans">
       <organization>Nokia Bell Labs</organization>
 
       <address>
@@ -120,7 +120,24 @@
     <keyword>I-D</keyword>
 
     <abstract>
-      <t>{ToDo}</t>
+      <t>{ToDo, something like:}
+   This Informational/experimental RFC describes the Prague congestion
+   control scheme, derived from DCTCP and adapted for Internet
+   traffic by fulfilling the L4S Prague requirements.  It reuses the 
+   DCTCP  mechanisms to achieve
+   high-burst tolerance, low latency, and high throughput on L4S supporting
+   network nodes.
+   Prague TCP is intended to be deployed on the Internet where it is compatible
+   with TCP-Reno on drop based bottlenecks (AQM, policers or taildrop) and
+   with L4S network support also on ECN based bottlenecks. Prague TCP can only
+   achieve its low latency and high throughput when its packets are marked with
+   a shallow ECN threshold and can only achieve its throughput fairness when
+   a Coupled or FQ AQM mechanism is in place. For Classic ECN bottlenecks (RFC...)
+   that are unaware of L4S, operators might want to apply additional measures to
+   limit or avoid the higher throughput use of L4S Prague traffic.
+   This memo presents the current state of the Linux Prague TCP implementation
+   and some possible opprtunities for further performance improvements.
+</t>
     </abstract>
   </front>
 
@@ -250,7 +267,7 @@
     </section>
 
     <section title="DCTCP: Brief Recap">
-      <t>{ToDo}</t>
+      <t>{ToDo} Is this needed? Can't we just refer to the DCTCP RFC if interested? We will anyway axplain all aspects? or not?</t>
     </section>
 
     <section anchor="pracc_prague_cc" title="Prague Congestion Control">
