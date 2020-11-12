@@ -1,0 +1,480 @@
+% Encoding: windows-1252
+
+
+@String { i-d           = {Internet Draft} }
+
+@String { iab           = {Internet Architecture Board} }
+@String { ietf          = {Internet Engineering Task Force} }
+@String { irtf          = {Internet Research Task Force} }
+@String { jour-acmccr   = {ACM SIGCOMM Computer Communication Review} }
+@String { jour-ccr      = {Computer Communication Review} }
+@String { jour-cnisdns  = {Computer Networks \& ISDN Systems} }
+@String { jour-commsacm = {Communications of the ACM} }
+@String { jour-ieeenet  = {IEEE Network} }
+@String { jour-jsac     = {IEEE Journal on Selected Areas in Communications} }
+@String { jour-telesys  = {Telecommunications Systems} }
+@String { jour-toc      = {IEEE Transactions on Communications} }
+@String { jour-ton      = {IEEE/ACM Transactions on Networking} }
+@String { proc-ec       = {Proc. ACM E-Commerce} }
+@String { proc-hotnets  = {Proc. Workshop on Hot Topics in Networks} }
+@String { proc-icnp     = {Proc. IEEE International Conference on Network Protocols} }
+@String { proc-icqt     = {Proc. Internet Charging and QoS Technology} }
+@String { proc-infocom  = {Proc. IEEE Conference on Computer Communications} }
+@String { proc-iwqos    = {Proc. International Workshop on QoS} }
+@String { proc-mobicom  = {Proc. ACM International Conference on Mobile Computing and Networks} }
+@String { proc-ndss     = {Proc. ISOC Network and Distributed Systems Security Symposium} }
+@String { proc-ngc      = {International COST264 Workshop on Networked Group Communication} }
+@String { proc-nsdi     = {Proc. USENIX Symposium on Networked Systems Design and Implementation} }
+@String { proc-pfldnet  = {Proc. Int'l Wkshp on Protocols for Future, Large-scale \& Diverse Network Transports} }
+@String { proc-qofis    = {International workshop on Quality of future Internet Services} }
+@String { proc-rearch   = {Proc. ACM ReArch} }
+@String { proc-sigcomm  = {Proc. ACM SIGCOMM} }
+@String { proc-weis     = {Proc. Workshop on the Economics of Information Security} }
+@String { rfc           = {Request for Comments} }
+@String { rfc-editor    = {RFC Editor} }
+
+@Article{Alizadeh10:DCTCP_brief,
+  Title                    = {{Data Center TCP (DCTCP)}{}},
+  Author                   = {Mohammad Alizadeh and others},
+  Journal                  = proc-sigcomm # {'10, } # jour-ccr,
+  Year                     = {2010},
+  Month                    = oct,
+  Number                   = {4},
+  Pages                    = {63--74},
+  Volume                   = {40},
+
+  __markedentry            = {[RJB:2]},
+  Affiliation              = {1-5,7-8: Microsoft; 6: Stanford},
+  Doi                      = {\url{http://doi.acm.org/10.1145/1851275.1851192}},
+  Keywords                 = {Data Communication, Networks, Ethernet, IP, Data Centre, Congestion Control, Quality of Service, QoS, Rate Control, Active Queue Management, AQM, Algorithms, Protocols, Delay, Performance, Traffic Characterisation},
+  Owner                    = {RJB},
+  Timestamp                = {2006.08.21}
+}
+
+@TechReport{IETF_RFC5681:TCP_algorithms,
+  Title                    = {{TCP Congestion Control}{}},
+  Author                   = {M. Allman and V. Paxson and E. Blanton},
+  Institution              = rfc-editor,
+  Year                     = {2009},
+  Month                    = sep,
+  Number                   = {5681},
+  Type                     = rfc,
+
+  Annote                   = {Obsoletes RFC2581, see } # paper-transp_prot_qos,
+  Annoteby                 = {RJB},
+  Annoteon                 = {1999.??.??},
+  Keywords                 = {Data Communication, Networks, Internet, Congestion Control, Algorithms, Standards},
+  Owner                    = {RJB},
+  Timestamp                = {2010.07.15},
+  Url                      = {\href{http://www.ietf.org/rfc/rfc5681.txt}{rfc5681.txt}}
+}
+
+@TechReport{IETF_RFC2581:TCP_algorithms,
+  Title                    = {{TCP Congestion Control}{}},
+  Author                   = {M. Allman and V. Paxson and W. Stevens},
+  Institution              = rfc-editor,
+  Year                     = {1999},
+  Month                    = apr,
+  Number                   = {2581},
+  Type                     = rfc,
+
+  Annote                   = paper-transp_prot_qos,
+  Annoteby                 = {RJB},
+  Annoteon                 = {1999.??.??},
+  Keywords                 = {Data Communication, Networks, Internet, Congestion Control, Algorithms, Standards},
+  Owner                    = {RJB},
+  Timestamp                = {2000.08.17},
+  Url                      = {\href{http://www.ietf.org/rfc/rfc2581.txt}{rfc2581.txt}}
+}
+
+@Article{Appenzeller04:Sizing_buffers,
+  Title                    = {{Sizing Router Buffers}{}},
+  Author                   = {Guido Appenzeller and Isaac Keslassy and Nick McKeown},
+  Journal                  = proc-sigcomm # {'04, } # jour-ccr,
+  Year                     = {2004},
+  Month                    = sep,
+  Number                   = {4},
+  Volume                   = {34},
+
+  Affiliation              = {Stanford},
+  Annote-url               = {\url{http://www.jungle.bt.co.uk/fora/confs/sigcomm/04/sigcomm_papers_rvw_rjb.html#Sizing_Router}},
+  Annoteby                 = {RJB},
+  Annoteon                 = {2005.09.03},
+  Keywords                 = {Data Communication, Networks, Internet, Quality of Service, QoS, Congestion Control, Rate Control, Provisioning, Algorithms, Protocols},
+  Organization             = {ACM},
+  Owner                    = {RJB},
+  Timestamp                = {2005.03.30},
+  Url                      = {\url{http://yuba.stanford.edu/~nickm/papers/sigcomm2004.pdf}}
+}
+
+@Inproceedings{Bai15:PIAS,
+  Title                    = {{Information-Agnostic Flow Scheduling for Commodity Data Centers}{}},
+  Author                   = {Wei Bai and Li Chen and Kai Chen and Dongsu Han and Chen Tian and Hao Wang},
+  Booktitle                = {12th {USENIX} Symposium on Networked Systems Design and Implementation ({NSDI} 15)},
+  Year                     = {2015},
+
+  Address                  = {Oakland, CA},
+  Pages                    = {455--468},
+  Publisher                = {{USENIX} Association},
+
+  Abstract-url             = {https://www.usenix.org/node/189013},
+  ISBN                     = {978-1-931971-218},
+  Owner                    = {RJB},
+  Timestamp                = {2019.06.23},
+  Url                      = {https://www.usenix.org/system/files/conference/nsdi15/nsdi15-paper-bai.pdf}
+}
+
+@TechReport{IETF_RFC1122:HostReqs,
+  Title                    = {{Requirements for Internet Hosts -- Communication Layers}{}},
+  Author                   = {R. Braden},
+  Institution              = rfc-editor,
+  Year                     = {1989},
+  Month                    = oct,
+  Number                   = {1122},
+  Type                     = rfc,
+
+  Keywords                 = {Data Communication, Networks, Internet, Congestion Control, Algorithms, Standards},
+  Owner                    = {RJB},
+  Timestamp                = {2019.11.01},
+  Url                      = {https://tools.ietf.org/html/rfc1122}
+}
+
+@TechReport{Briscoe16a:l4s-arch_ID,
+  Title                    = {{Low Latency, Low Loss, Scalable Throughput (L4S) Internet Service: Architecture}{}},
+  Author                   = {Briscoe (Ed.), Bob and De Schepper, Koen and Bagnulo, Marcelo and White, Greg},
+  Institution              = ietf,
+  Year                     = {2020},
+  Month                    = mar,
+  Note                     = {(Work in Progress)},
+  Number                   = {draft-ietf-tsvwg-l4s-arch-06},
+  Type                     = i-d,
+
+  __markedentry            = {[RJB:2]},
+  Abstract-url             = {\url{http://www.bobbriscoe.net/pubs.html#l4s-arch}},
+  Keywords                 = {Data Communication, Networks, Internet, Performance, Latency, Congestion Control, Congestion Avoidance, QoS, Algorithms, Design, AQM, TCP, Analysis, Scaling, Evaluation},
+  Owner                    = {RJB},
+  Timestamp                = {2016.06.06},
+  Url                      = {https://tools.ietf.org/html/draft-ietf-tsvwg-l4s-arch}
+}
+
+@TechReport{Briscoe19c:FQ_v_e2e,
+  Title                    = {{Per-Flow Scheduling and the End-to-End Argument}{}},
+  Author                   = {Bob Briscoe},
+  Institution              = {bobbriscoe.net},
+  Year                     = {2019},
+  Month                    = jul,
+  Number                   = {TR-BB-2019-001},
+  Type                     = {Discussion Paper},
+
+  Abstract-url             = {\url{http://www.bobbriscoe.net/pubs.html#per-flow}},
+  Affiliation              = {bobbriscoe.net},
+  Keywords                 = {Data Communication, Networks, Internet, Economics, Accountability, Fairness, Resource Sharing, Scheduling, Congestion Control, Quality of Service, QoS, Interconnection, Architecture, Protocols},
+  Owner                    = {RJB},
+  Timestamp                = {2009.05.23},
+  Url                      = {http://bobbriscoe.net/projects/latency/per-flow_tr.pdf}
+}
+
+@TechReport{Briscoe15f:ecn-l4s-id_ID,
+  Title                    = {{Identifying Modified Explicit Congestion Notification (ECN) Semantics for Ultra-Low Queuing Delay (L4S)}{}},
+  Author                   = {De Schepper, Koen and Briscoe (Ed.), Bob},
+  Institution              = ietf,
+  Year                     = {2020},
+  Month                    = mar,
+  Note                     = {(Work in Progress)},
+  Number                   = {draft-ietf-tsvwg-ecn-l4s-id-10},
+  Type                     = i-d,
+
+  __markedentry            = {[RJB:2]},
+  Abstract-url             = {\url{http://www.bobbriscoe.net/pubs.html#ecn-l4s-id}},
+  Keywords                 = {Data Communication, Networks, Internet, Performance, Latency, Congestion Control, Congestion Avoidance, QoS, Algorithms, Design, AQM, TCP, Analysis, Scaling, Evaluation},
+  Owner                    = {RJB},
+  Timestamp                = {2015.11.23},
+  Url                      = {http://tools.ietf.org/html/draft-ietf-tsvwg-ecn-l4s-id}
+}
+
+@TechReport{Briscoe15e:DualQ-Coupled-AQM_ID,
+  Title                    = {{DualQ Coupled AQM for Low Latency, Low Loss and Scalable Throughput (L4S)}{}},
+  Author                   = {De Schepper, Koen and Briscoe (Ed.), Bob and White, Greg},
+  Institution              = ietf,
+  Year                     = {2020},
+  Month                    = mar,
+  Note                     = {(Work in Progress)},
+  Number                   = {draft-ietf-tsvwg-aqm-dualq-coupled-11},
+  Type                     = i-d,
+
+  __markedentry            = {[RJB:2]},
+  Abstract-url             = {\url{http://www.bobbriscoe.net/pubs.html#dualq-coupled}},
+  Keywords                 = {Data Communication, Networks, Internet, Performance, Latency, Congestion Control, Congestion Avoidance, QoS, Algorithms, Design, AQM, TCP, Analysis, Scaling, Evaluation},
+  Owner                    = {RJB},
+  Timestamp                = {2015.11.23},
+  Url                      = {http://tools.ietf.org/html/draft-ietf-tsvwg-aqm-dualq-coupled}
+}
+
+@TechReport{IETF_RFC3649:HSTCP,
+  Title                    = {{HighSpeed TCP for Large Congestion Windows}{}},
+  Author                   = {Sally Floyd},
+  Institution              = rfc-editor,
+  Year                     = {2003},
+  Month                    = dec,
+  Number                   = {3649},
+  Type                     = rfc,
+
+  Affiliation              = {ICSI},
+  Keywords                 = {Data Communication, Networks, Internet, Congestion Control, Algorithms, Standards},
+  Owner                    = {RJB},
+  Timestamp                = {2010.07.15},
+  Url                      = {\href{rfc3649.txt}{http://tools.ietf.org/rfc/rfc3649.txt}}
+}
+
+@Article{Guo02:Size-based_scheduling,
+  Title                    = {{Scheduling Flows with Unknown Sizes: Approximate Analysis}{}},
+  Author                   = {Guo, Liang and Matta, Ibrahim},
+  Journal                  = {SIGMETRICS Perform. Eval. Rev.},
+  Year                     = {2002},
+  Month                    = jun,
+  Number                   = {1},
+  Pages                    = {276--277},
+  Volume                   = {30},
+
+  Acmid                    = {511378},
+  Address                  = {New York, NY, USA},
+  Doi                      = {10.1145/511399.511378},
+  ISSN                     = {0163-5999},
+  Issue_date               = {June 2002},
+  Numpages                 = {2},
+  Owner                    = {RJB},
+  Publisher                = {ACM},
+  Timestamp                = {2019.07.16},
+  Url                      = {http://doi.acm.org/10.1145/511399.511378}
+}
+
+@Article{cubic,
+  Title                    = {{CUBIC}: a new {TCP}-friendly high-speed {TCP} variant},
+  Author                   = {Ha, Sangtae and Rhee, Injong and Xu, Lisong},
+  Journal                  = {SIGOPS Operating Systems Review},
+  Year                     = {2008},
+  Month                    = jul,
+  Number                   = {5},
+  Pages                    = {64--74},
+  Volume                   = {42},
+
+  Acmid                    = {1400105},
+  Address                  = {New York, NY, USA},
+  Doi                      = {10.1145/1400097.1400105},
+  ISSN                     = {0163-5980},
+  Issue_date               = {July 2008},
+  Numpages                 = {11},
+  Owner                    = {RJB},
+  Publisher                = {ACM},
+  Timestamp                = {2015.05.22},
+  Url                      = {http://doi.acm.org/10.1145/1400097.1400105}
+}
+
+@TechReport{Hoeiland18:fq-codel_RFC,
+  Title                    = {{The FlowQueue-CoDel Packet Scheduler and Active Queue Management Algorithm}{}},
+  Author                   = {Hoeiland-Joergensen, T. and McKenney, P. and T\"aht, D. and Gettys, J. and Dumazet, E.},
+  Institution              = rfc-editor,
+  Year                     = {2018},
+  Month                    = jan,
+  Number                   = {RFC8290},
+  Type                     = rfc,
+
+  Affiliation              = {1: Karlstad University; 2: IBM Linux Technology Center; 3: Teklibre; 4: Independent; 5: Google},
+  Keywords                 = {Data communication, Networks, Internet, Active Queue Management, Congestion Control, Algorithm, Scheduling},
+  Owner                    = {RJB},
+  Timestamp                = {2019.03.07},
+  Url                      = {https://tools.ietf.org/html/rfc8290}
+}
+
+@Article{Jacobson88:Cong_avoid_ctrl,
+  Title                    = {{Congestion Avoidance and Control}{}},
+  Author                   = {Van Jacobson},
+  Journal                  = proc-sigcomm # {'88 Symposium, } # jour-ccr,
+  Year                     = {1988},
+  Month                    = aug,
+  Number                   = {4},
+  Pages                    = {314--329},
+  Volume                   = {18},
+
+  Affiliation              = {LBL},
+  Keywords                 = {Data Communication, Networks, Internet, Quality of Service, QoS, Congestion Control, Rate Control, Policy, Admission Control, Architecture, Protocols, Business Models},
+  Owner                    = {RJB},
+  Timestamp                = {1998.05.11},
+  Url                      = {\url{http://citeseer.ist.psu.edu/jacobson88congestion.html}}
+}
+
+@TechReport{Jacobson88b:Cong_avoid_ctrl,
+  Title                    = {{Congestion Avoidance and Control}{}},
+  Author                   = {Van Jacobson and Michael J.~Karels},
+  Institution              = {Laurence Berkeley Labs},
+  Year                     = {1988},
+  Month                    = nov,
+  Note                     = {(a slightly modified version of the original published at SIGCOMM in Aug'88 \cite{Jacobson88:Cong_avoid_ctrl})},
+  Type                     = {Technical Report},
+
+  Affiliation              = {1: LBL; 2: UC Berkeley},
+  Keywords                 = {Data Communication, Networks, Internet, Quality of Service, QoS, Congestion Control, Rate Control, Policy, Admission Control, Architecture, Protocols, Business Models},
+  Owner                    = {RJB},
+  Timestamp                = {1998.05.11},
+  Url                      = {\url{http://ee.lbl.gov/papers/congavoid.pdf}}
+}
+
+@TechReport{Khademi18:ABE,
+  Title                    = {{TCP Alternative Backoff with ECN (ABE)}{}},
+  Author                   = {Naeem Khademi and Michael Welzl and Grenville Armitage and Gorry Fairhurst},
+  Institution              = rfc-editor,
+  Year                     = {2018},
+  Month                    = dec,
+  Number                   = {RFC8511},
+  Type                     = rfc,
+
+  Abstract-url             = {\url{http://tools.ietf.org/wg/tcpm/}},
+  Affiliation              = {1-2: Uni Oslo; 3: Netflix; 4: Uni Aberdeen},
+  Keywords                 = {Data Communication, Networks, Internet, Quality of Service, QoS, Congestion Control, Rate Control, Algorithms, Protocols},
+  Owner                    = {RJB},
+  Timestamp                = {2019.10.16},
+  Url                      = {https://tools.ietf.org/html/rfc8511}
+}
+
+@Article{Mathis97:TCP_Macro,
+  Title                    = {{The Macroscopic Behavior of the TCP Congestion Avoidance Algorithms} },
+  Author                   = {Matthew Mathis and Jeffrey Semke and Jamshid Mahdavi and Teunis Ott},
+  Journal                  = {SIGCOMM Comput. Commun. Rev.},
+  Year                     = {1997},
+  Number                   = {3},
+  Pages                    = {67--82},
+  Volume                   = {27},
+
+  Address                  = {New York, NY, USA},
+  Doi                      = {http://doi.acm.org/10.1145/263932.264023},
+  ISSN                     = {0146-4833},
+  Keywords                 = {Data Communication, Networks, Internet, Congestion Control, Analysis, Modelling},
+  Owner                    = {RJB},
+  Publisher                = {ACM},
+  Timestamp                = {2020.03.27}
+}
+
+@Inproceedings{Moktan12:FavoringShort,
+  author    = {G. R. {Moktan} and S. {Siikavirta} and M. {S\"arel\"a} and J. {Manner}},
+  booktitle = {Proc. IEEE INFOCOM Workshops},
+  title     = {Favoring the Short},
+  year      = {2012},
+  pages     = {31--36},
+  month     = mar,
+  doi       = {10.1109/INFCOMW.2012.6193513},
+  keywords  = {transport protocols;flow rate fairness;TCP friendliness;transport protocols;simple bandwidth fairness;web pages;Delay;Protocols;Algorithm design and analysis;Bandwidth;Internet;Mobile communication;Wide area networks},
+  owner     = {RJB},
+  timestamp = {2019.07.16},
+}
+
+@TechReport{Nichols18:codel_RFC,
+  Title                    = {{Controlled Delay Active Queue Management}{}},
+  Author                   = {Kathleen Nichols and Van Jacobson},
+  Institution              = rfc-editor,
+  Year                     = {2018},
+  Month                    = jan,
+  Number                   = {RFC8289},
+  Type                     = rfc,
+
+  Affiliation              = {1: Pollere Inc; 2-4: Google},
+  Editor                   = {and McGregor, Andrew and Iyengar, Janardhan},
+  Keywords                 = {Data communication, Networks, Internet, Active Queue Management, Congestion Control, Algorithm, Scheduling},
+  Owner                    = {RJB},
+  Timestamp                = {2020.04.17},
+  Url                      = {https://tools.ietf.org/html/rfc8289}
+}
+
+@Inproceedings{Palmei19:Cobalt,
+  Title                    = {{Design and Evaluation of COBALT Queue Discipline}{}},
+  Author                   = {J. {Palmei} and S. {Gupta} and P. {Imputato} and J. {Morton} and M. P. {Tahiliani} and S. {Avallone} and D. {T\"aht}},
+  Booktitle                = {2019 IEEE International Symposium on Local and Metropolitan Area Networks (LANMAN)},
+  Year                     = {2019},
+  Pages                    = {1-6},
+
+  Abstract-url             = {\url{https://ieeexplore.ieee.org/document/8847054}},
+  Doi                      = {https://doi.org/10.1109/LANMAN.2019.8847054},
+  Keywords                 = {Data communication, Networks, Internet, Active Queue Management, Congestion Control, Algorithm, Scheduling, CAKE},
+  Owner                    = {RJB},
+  Timestamp                = {2020.04.05},
+  Url                      = {https://www.researchgate.net/publication/336087375_Design_and_Evaluation_of_COBALT_Queue_Discipline}
+}
+
+@TechReport{IETF_RFC3168:ECN_IP_TCP,
+  Title                    = {{The Addition of Explicit Congestion Notification (ECN) to IP}{}},
+  Author                   = {K. K. Ramakrishnan and Sally Floyd and David Black},
+  Institution              = rfc-editor,
+  Year                     = {2001},
+  Month                    = sep,
+  Number                   = {3168},
+  Type                     = rfc,
+
+  Keywords                 = {Data Communication, Networks, Internet, Security, Quality of Service, QoS, Congestion Control, Rate Control, Architecture, Protocols, Signalling, Standards},
+  Owner                    = {RJB},
+  Timestamp                = {2001.09.30},
+  Url                      = {\href{http://www.ietf.org/rfc/rfc3168.txt}{rfc3168.txt}}
+}
+
+@Inproceedings{Yang02:Sized-basedTCP,
+  Title                    = {{Size-based adaptive bandwidth allocation: optimizing the average QoS for elastic flows}{}},
+  Author                   = {{Shanchieh Yang} and G. {de Veciana}},
+  Booktitle                = proc-infocom,
+  Year                     = {2002},
+  Month                    = jun,
+  Pages                    = {657--666},
+  Volume                   = {2},
+
+  Abstract-url             = {https://ieeexplore.ieee.org/document/1019311},
+  Doi                      = {10.1109/INFCOM.2002.1019311},
+  ISSN                     = {0743-166X},
+  Keywords                 = {bandwidth allocation;quality of service;telecommunication traffic;transport protocols;network topology;multimedia communication;size-based adaptive bandwidth allocation;average QoS;elastic flows;user perceived performance;multimedia;data file transfers;online dynamic bandwidth allocation policy;on-going transfers;user perceived average bit transmission delay;BTD;delay/flow size;traffic load;TCP Reno;network topologies;transport mechanism;Channel allocation;Delay;Bandwidth;Throughput;Load flow analysis;Analytical models;Telecommunication traffic;Network topology;Stability;Particle measurements},
+  Owner                    = {RJB},
+  Timestamp                = {2019.07.16}
+}
+
+@Inproceedings{Zielger04:TCP_Vienna,
+  Title                    = {{Improving Perceived Web Performance by Size Based Congestion Control}{}},
+  Author                   = {Thomas Ziegler and Hung Tuan Tran and Eduard Hasenleithner},
+  Booktitle                = {Proc 3rd Int'l IFIP-TC6 Networking Conf.},
+  Year                     = {2004},
+  Month                    = may,
+  Pages                    = {687},
+
+  Bibsource                = {dblp computer science bibliography, https://dblp.org},
+  Biburl                   = {https://dblp.org/rec/bib/conf/networking/ZieglerTH04},
+  Doi                      = {10.1007/978-3-540-24693-0\_57},
+  Owner                    = {RJB},
+  Timestamp                = {2019.07.16},
+  Url                      = {https://doi.org/10.1007/978-3-540-24693-0\_57}
+}
+
+@Inproceedings{Mathis09:Relentless,
+  author       = {Matt Mathis},
+  booktitle    = proc-pfldnet #{ {(PFLDNeT'09)}},
+  title        = {{Relentless Congestion Control}{}},
+  year         = {2009},
+  month        = may,
+  abstract-url = {\url{http://www.hpcc.jp/pfldnet2009/Program.html}},
+  affiliation  = {PSC},
+  keywords     = {Data Communication, Networks, Internet, Quality of Service, QoS, Congestion Control, Rate Control, TCP, Algorithm, Protocol, Proportional},
+  owner        = {RJB},
+  timestamp    = {2009.06.08},
+  url          = {\url{http://www.hpcc.jp/pfldnet2009/Program_files/1569198525.pdf}},
+}
+
+@Article{Alizadeh10:DCTCP,
+  author      = {Mohammad Alizadeh and Albert Greenberg and David A. Maltz and Jitu Padhye and Parveen Patel and Balaji Prabhakar and Sudipta Sengupta and Murari Sridharan},
+  journal     = proc-sigcomm #{'10, } # jour-ccr,
+  title       = {{Data Center TCP (DCTCP)}{}},
+  year        = {2010},
+  volume      = {40},
+  number      = {4},
+  pages       = {63--74},
+  month       = oct,
+  affiliation = {1-5,7-8: Microsoft; 6: Stanford},
+  doi         = {\url{http://doi.acm.org/10.1145/1851275.1851192}},
+  keywords    = {Data Communication, Networks, Ethernet, IP, Data Centre, Congestion Control, Quality of Service, QoS, Rate Control, Active Queue Management, AQM, Algorithms, Protocols, Delay, Performance, Traffic Characterisation},
+  owner       = {RJB},
+  timestamp   = {2006.08.21},
+}
+
+@Comment{jabref-meta: databaseType:bibtex;}

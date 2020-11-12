@@ -1,0 +1,81 @@
+%% own.sty LaTeX style file - Bob Briscoe
+%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{own}[2011/12/21 v3.0 Personal LaTeX package]
+\RequirePackage{ifthen}
+
+% Conditional compilation support based on no. of columns ---------------
+%
+% Create a globally usable boolean `twocol'
+%  from the internal boolean `@twocolumn'
+%
+\newboolean{twocol}
+\ifthenelse{\boolean{@twocolumn}}%
+{\setboolean{twocol}{true}}%
+{\setboolean{twocol}{false}}
+%
+% Note: The above lines use the LaTeX `ifthen' package
+%       because \newboolean's are defined globally
+%       The following lines are Plain TeX alternatives, but require
+%  \newif\iftwocol % to precede them in the top level TeX file - messier
+%
+%  \if@twocolumn \twocoltrue
+%  \else \twocolfalse
+%  \fi
+
+% Environment to switch into & out of \onecolumn, but only if in [twocolumn] mode
+\newenvironment*{tmponecol}%
+{\ifthenelse{\boolean{twocol}}{\onecolumn}{}}%
+{\ifthenelse{\boolean{twocol}}{\twocolumn}{}}
+
+% Support for appendices within a chapter of a report
+%  Using the newly provided command \appendixchp, subsequent sections,
+%  tables and figures are labelled X.A, X.B etc, where X is the chapter number
+\providecommand{\appendixchp}{%
+  \setcounter{section}{0}%
+  \setcounter{table}{0}%
+  \setcounter{figure}{0}%
+  \renewcommand*{\thesection}{\thechapter.\Alph{section}}%
+  \renewcommand*{\thetable}{\thechapter.\Alph{table}}%
+  \renewcommand*{\thefigure}{\thechapter.\Alph{figure}}%
+}
+
+% Support for Alpha-labelled appendices within a part of a report
+%  without listing them in the toc
+%  Using the newly provided command \appendixprt, subsequent sections,
+%  tables and figures are labelled Appendix A, Appendix B etc.
+\providecommand{\appendixprt}{%
+  \setcounter{chapter}{0}%
+  \setcounter{table}{0}%
+  \setcounter{figure}{0}%
+  \renewcommand*{\thechapter}{\Alph{chapter}}%
+  \newcommand*{\chapterapx}[1]{%
+    \addtocounter{chapter}{1}%
+    \chapter*{Appendix \thechapter.\ ##1}% ## necessary for command within command?
+  }
+}
+
+%% This next bit has been commented out
+%% --- bibdb.ini has been changed from \Href to \url instead
+%% --- also \href{}{} can be used in .bib files,
+%% but BiBdb only notices the first item in its .ini file, so these don't
+%% get rendered as hyperlinks in BiBdB --- they're fine in the .PDF though.
+%%
+% Synonym for \url -------------------------------------------------------
+%
+% wBiBdb uses \Href (note the capitalisation) for Web hyperlink capability
+%  so I use \Href in my .bib files.
+% \url cannot support different anchor text from the URL,
+% \href{}{} from hyperref.sty can;
+% \Href{}[] in wBiBdb can too, but the syntax is incompatible with LateX;
+%  so I've just defined a simple synonym with no optional argument.
+%\newcommand*{\Href}[1]{\url{#1}}
+
+% Support for highlighting and counting up pending work
+%
+\newcounter{ctr:todo}
+
+\setcounter{ctr:todo}{0}
+
+\newcommand{\ToDo}[1]{\stepcounter{ctr:todo}{\emph{\{ToDo \arabic{ctr:todo}:~#1\}}}}
+

@@ -1,0 +1,102 @@
+%% setlengths package - Bob Briscoe
+%%
+\NeedsTeXFormat{LaTeX2e} \ProvidesPackage{setlengths}[2005/01/31 v1.2 Personal LaTeX
+package]
+
+% fullpage option - Bob Briscoe, 24 Apr 2001
+%
+\DeclareOption{fullpage}{
+
+  % Vertical alignment
+
+  \setlength{\topmargin}{-0.5in}% top of page to top of header box -1in
+  \setlength{\headheight}{0.2in}% height of header box
+  \setlength{\headsep}{0.3in}    % bottom of header box to top of text body box
+  \setlength{\textheight}{\paperheight}
+  \addtolength{\textheight}{-2.0in} % height of text body box
+  \setlength{\footskip}{0.3in}    % distance from bottom of body box to bottom of footers box
+  %\setlength{\footskip}{0.3in}     % (obsolete) distance from bottom of body box to top of footers box
+  %\setlength{\footheight}{0.2in} % (obsolete) height of footers box
+
+  % Horizontal alignment
+
+  \setlength{\oddsidemargin}{0.in}% left of page to left of text body box (odd pp) -1in
+  \setlength{\evensidemargin}{0.in}% left of page to left of text body box (even pp) -1in
+  \setlength{\textwidth}{\paperwidth}
+  \addtolength{\textwidth}{-2.0in}% width of text body box
+}
+
+% tightpage option - Bob Briscoe, 24 May 2002
+%
+\DeclareOption{tightpage}{
+
+  % Vertical alignment
+
+  \setlength{\topmargin}{-0.75in}% top of page to top of header box -1in
+  \setlength{\headheight}{0.2in}% height of header box
+  \setlength{\headsep}{0.3in}    % bottom of header box to top of text body box
+  \setlength{\textheight}{\paperheight}
+  \addtolength{\textheight}{-1.5in} % height of text body box
+  \setlength{\footskip}{0.3in}    % distance from bottom of body box to bottom of footers box
+  %\setlength{\footskip}{0.3in}     % (obsolete) distance from bottom of body box to top of footers box
+  %\setlength{\footheight}{0.2in} % (obsolete) height of footers box
+
+  % Horizontal alignment
+
+  \setlength{\oddsidemargin}{-0.25in}% left of page to left of text body box (odd pp) -1in
+  \setlength{\evensidemargin}{-0.25in}% left of page to left of text body box (even pp) -1in
+  \setlength{\textwidth}{\paperwidth}
+  \addtolength{\textwidth}{-1.5in}% width of text body box
+}
+
+% inchrndtext option - Bob Briscoe, 31 Jan 2005
+%
+\DeclareOption{inchrndtext}{
+
+  % Vertical alignment
+
+  \setlength{\topmargin}{-0.85in}% top of page to top of header box -1in
+  \setlength{\headheight}{0.2in}% height of header box
+  \setlength{\headsep}{0.3in}    % bottom of header box to top of text body box
+  \setlength{\textheight}{\paperheight}
+  \addtolength{\textheight}{-1.35in} % height of text body box
+  \setlength{\footskip}{0.3in}    % distance from bottom of body box to bottom of footers box
+  %\setlength{\footskip}{0.3in}     % (obsolete) distance from bottom of body box to top of footers box
+  %\setlength{\footheight}{0.2in} % (obsolete) height of footers box
+
+  % Horizontal alignment
+
+  \setlength{\oddsidemargin}{-0.25in}% left of page to left of text body box (odd pp) -1in
+  \setlength{\evensidemargin}{-0.25in}% left of page to left of text body box (even pp) -1in
+  \setlength{\textwidth}{\paperwidth}
+  \addtolength{\textwidth}{-1.5in}% width of text body box
+}
+
+% noindent option - Bob Briscoe, 26 Dec 2001
+%
+\DeclareOption{noindent}{
+
+  % Modern paragraph format instead of traditional indents
+
+  \setlength{\parindent}{0pt}
+  \setlength{\parskip}{1.5ex plus 0.8ex minus 0.4ex}
+}
+
+% arraystretch option - Bob Briscoe, 26 Dec 2001
+%
+\DeclareOption{arraystretch}{
+
+  % More space between rows of arrays, tabulars etc.
+
+  \renewcommand*{\arraystretch}{1.25}
+}
+
+% catch invalid options
+%
+\DeclareOption*{%
+\PackageWarning{setlengths}{Unknown option `\CurrentOption'}%
+}
+
+% Process options that have been both specified and declared
+%
+\ProcessOptions\relax
