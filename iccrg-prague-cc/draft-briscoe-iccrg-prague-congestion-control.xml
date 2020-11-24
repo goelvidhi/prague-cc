@@ -279,7 +279,7 @@
     <section anchor="pracc_prague_cc" title="Prague Congestion Control">
       <t/>
 
-      <section anchor="pracc_pkt_id" title="Packet Identification (L4S Req.)">
+      <section anchor="pracc_pkt_id" title="Packet Identification">
         <t>This section addresses Req 4.1. [xref-ecn-l4s-id].</t>
 
         <t>On the public Internet, a sender using the Prague CC MUST set the
@@ -403,7 +403,7 @@
           than hard-coded. For instance, if the initial window of 10 segments
           was paced evenly across the initial RTT then, in the next round, an
           implementation that deems there has been a loss after (say) 1/4 of
-          an RTT can count 1/4 of 10 = 3 DupACKs (rounded up). </t>
+          an RTT can count 1/4 of 10 = 3 DupACKs (rounded up).</t>
         </section>
       </section>
 
