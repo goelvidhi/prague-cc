@@ -1,24 +1,32 @@
 % !TeX root = responsiveness_tr
-%% ================================================================
+% ================================================================
 \section{Problem}\label{prresp_Problem}
 
-Common implementations of DCTCP~\cite{Alizadeh10:DCTCP} (e.g.\ in Linux or FreeBSD) take two rounds before a change in congestion on the path fully feeds into the moving average that regulates its response. This is on top of the inherent round trip of delay that the feedback loop adds.
+\begin{figure*}
+	\includegraphics[width=\linewidth]{dctcp-feedback-lag}
+	\caption{The problem: DCTCP's two stages for processing congestion feedback: 1) gathering feedback in a fixed sequence of rounds (RTT\(_i\) to calculate the EWMA (\(\alpha_i\)); 2) applying this EWMA on the first feedback mark, when it has had no time to gather enough feedback, which leads to a typically inadequate congestion response before entering congestion window reduced (CWR) state, which suppresses any further response for a round. See text for full commentary.}
+	\label{fig:dctcp-feedback-lag}
+\end{figure*}
 
-Both extra rounds are due to the two-stage process for maintaining the EWMA then using it to respond to congestion. The first stage introduces a round of delay while it accumulates the marking fraction before passing the EWMA to the second stage that uses it to respond to congestion. The second extra round of delay is because the first stage clocks independently, while the second stage is triggered by the onset of congestion. So it takes two rounds before a full round of the congestion that triggered the start of the second stage has fed through into the EWMA that the first stage passes to the second.
+Common implementations of DCTCP~\cite{Alizadeh10:DCTCP} (e.g.\ in Windows, Linux, or FreeBSD~\cite{Bensley17:DCTCP}) take two rounds before a change in congestion on the path fully feeds into the moving average that regulates its response. This is on top of the inherent round trip of delay in the feedback loop.
+
+Both extra rounds are due to the two-stage process for maintaining the EWMA then using it to respond to congestion (see \autoref{fig:dctcp-feedback-lag}). The first stage introduces a round of delay (RTT\(_i\)) while it accumulates the marking fraction before it can calculate the EWMA (\(\alpha_i\)), which it passes to the second stage that uses the EWMA to reduce the congestion window (\(W\)) by \(\alpha_i W_i\). The second extra round of delay is because the first stage clocks independently, while the second stage is triggered by the arrival of congestion feedback (a red-coloured ACK). So it takes two rounds before a full round of the congestion that triggered the start of the second stage has fed through into the EWMA that the first stage passes to the second. This is further exacerbated by entering congestion window reduced (CWR) state as soon as the initial inadequate response has been applied, which suppresses any further response for a round, while all the congestion feedback arrives.
+
+The problem seems to boil down to how to update an EWMA of marking probability on a per-packet basis. But, more specifically, the problem is how to ensure that the time constant over which the per-packet EWMA smooths itself keeps to a set number of rounds, even though the number of packets per round varies.
 
 \section{Per-ACK EWMA}\label{prresp_Per-Packet_EWMA}
 
-Instead of the EWMA of the marking probability being upscaled by a constant factor, it is proposed to upscale it by \texttt{flight\_ / gain} (where \texttt{flight\_} is the packets in flight, and \texttt{gain < 1} is a constant). Then, as shown below, the EWMA can be maintained by a single continuous set of repetitive increments or decrements determined on each ACK.
+Instead of the EWMA of the marking probability being upscaled by a constant factor, it is proposed to upscale it by \texttt{flight\_ / gain}, where \texttt{flight\_} is the packets in flight, and \texttt{gain} is a constant (\texttt{gain < 1}). Then, as shown below, the EWMA can be maintained by a single continuous set of repetitive increments or decrements determined on each ACK.
 
-As we shall see, scaling up the EWMA by \texttt{flight\_} enables the repetitive per-packet operations to implicitly smooth the EWMA with a characteristic timescale proportionate to the RTT (specifically, \texttt{RTT/gain}).
+As we shall see, scaling up the EWMA by \texttt{flight\_} enables the repetitive per-packet operations to \emph{implicitly} smooth the EWMA with a characteristic timescale proportionate to the RTT (specifically, \texttt{RTT/gain}).
 
-This contrasts with the two-stage process of accumulating the marking fraction for a round before feeding it into an EWMA that is explicitly clocked per round.
+This contrasts with the two-stage process of accumulating the marking fraction for a round before feeding it into an EWMA that is \emph{explicitly} clocked per round.
 
-The scaled up EWMA is effectively a smoothed count of the number of congestion marks per RTT (\texttt{v = p*flight\_}), but scaled up by the constant \texttt{1/gain}. 
+The scaled up EWMA is effectively a smoothed count of the number of congestion marks per RTT, but scaled up by the constant \texttt{1/gain}. The number of marks per RTT (\texttt{v}) is related to the marking probability (\texttt{p}) by \texttt{v = p*flight\_}.
 
-Common implementations of DCTCP incorrectly mimic the timing but not the size of a classic congestion control's response. Classical congestion controls suppress any further response for a round because their initial response is large. On first onset of congestion, it seems wrong for DCTCP to immediately respond with a tiny reduction (based on the previous absence of congestion), then suppress any further response for a round trip. 
+Common implementations of DCTCP incorrectly mimic the timing but not the size of a classical congestion control's response. Classical congestion controls suppress any further response for a round because their initial response is large and fixed. On first onset of congestion, it seems wrong for DCTCP to immediately respond with a tiny reduction (based on the previous absence of congestion), then suppress any further response for a round trip. 
 
-Once we have an EWMA of congestion marks that is updated continually on every ACK, it becomes possible to spread the reduction over the round. Then, during the round, \texttt{v} will be growing if congestion is rising, and the response will naturally grow accordingly.
+So, once we have an EWMA of congestion marks that is updated continually on every ACK, it becomes possible to spread the reduction over the round. Then,  if congestion continues to rise during the round, the EWMA will grow, and the response can pick up this growth as it proceeds.
 
 \paragraph{Definitions of variables}
 \begin{description}[nosep]
@@ -27,7 +35,7 @@ Once we have an EWMA of congestion marks that is updated continually on every AC
 	\item [\texttt{av\_up}]: EWMA of the marks per round upscaled by \texttt{g}; Alternatively, it might help to think of this as the EWMA of the marking probability (alpha in DCTCP) upscaled by \texttt{g * flight\_}. 
 	\item [\texttt{flight\_}]: the number of packets in flight when the marking probablity was fed into the EWMA;
 	\item [\texttt{flight}]: the number of packets in flight now;
-	\item [\texttt{ce\_fb}] = 1 ECN packet feedback; 0 otherwise.
+	\item [\texttt{ce\_fb}] = 1 if ECN packet feedback; 0 otherwise.
 \end{description}
 
 \subsection{Intuition}\label{prresp_intuition}
@@ -56,11 +64,6 @@ The \texttt{ce\_fb} term can be implemented by adding 1 to \texttt{av\_up} on fe
 
 The number of packets acknowledged in the current round is \texttt{flight}. So repeatedly subtracting \texttt{av\_up/(flight\_*g)} on the arrival of every ACK would reduce \texttt{av\_up} by \texttt{av\_up*flight/(flight\_*g)} in a round. This approximates to \texttt{av\_up/g} per round. In integer arithmetic, that can be implemented by \texttt{av\_up/g} decrements of 1. 
 
-This is achieved as shown %in \autoref{fig:prresp_per-ack-ewma_av_up} 
-below by the repetitive additions, comparisons and decrements of a variable called \texttt{av\_carry}, which carries forward the remainder between ACKs. 
-
-We have defined the general-purpose function \texttt{repetitive\_div()} for the repetitive division, which will be reused later for maintaining the congestion window as well.
-
 %\begin{figure*}
 \begin{verbatim}
 On_each_ACK'd_packet {
@@ -68,10 +71,8 @@ On_each_ACK'd_packet {
               av_up, flight*g, &av_carry);
 }
 
-/* Repeated execution outputs true with 
- *  frequency proportional to numerator 
- *  (num) divided by denominator (denom)
- */
+// Repeated execution outputs true with 
+//  frequency proportional to num/denom
 bool repetitive_div(u32 num, u32 denom, 
                             u32 *carry) {
     *carry += num;
@@ -86,8 +87,13 @@ bool repetitive_div(u32 num, u32 denom,
 %\label{fig:prresp_per-ack-ewma_av_up}
 %\end{figure*}
 
+This is achieved as shown %in \autoref{fig:prresp_per-ack-ewma_av_up} 
+in the C-like pseudocode above by the repetitive additions, comparisons and decrements of a variable called \texttt{av\_carry}, which carries forward the remainder between ACKs. 
+
+We have defined the general-purpose function \texttt{repetitive\_div()} for the repetitive division, which will be reused later for maintaining the congestion window as well.
+
 \autoref{fig:per-ack-ewma-verify} compares toy simulations of the above EWMA and the DCTCP EWMA (without changing cwnd). It can be seen that, when whenever marks arrive, the algorithm always moves immediately, whereas DCTCP's EWMA does nothing until the next round trip cycle.
-\begin{figure}
+\begin{figure}[h]
 	\includegraphics[width=\linewidth]{per-ack-ewma-verify}
 	\caption{Initial verification of per-ACK EWMA algorithm, with constant \texttt{cwnd}}\label{fig:per-ack-ewma-verify}
 \end{figure}
@@ -115,8 +121,8 @@ On_each_ACK'd_packet {
               av_up, flight*g, &av_carry);
     if (!cwr && ce_fb) {
         // Record start of CWR state
-        cwr = true;
         next_seq = snd_next;
+        cwr = true;
     }
     if (cwr) {
         cwnd -= repetitive_div(
@@ -127,9 +133,8 @@ On_each_ACK'd_packet {
         }
     }
 }
-
 \end{verbatim}
-
+\bob{SHould CWR be checked before the reduction?}
 \bob{Consider inflating cwnd reduction by cwnd/flight.}
 
 \section{(Non-)Concerns}\label{prresp_Non-Concerns}

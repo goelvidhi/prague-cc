@@ -105,7 +105,7 @@ Control, Performance, Latency, Responsiveness, Dynamics, Algorithm, Standards}
 \fancyhf{}%
 \fancyhead[LO,RE]{\metashorttitle}%
 \fancyhead[LE,RO]{\metano}%
-\fancyfoot[LO,RE]{\scriptsize{\copyright~bobbriscoe.net Ltd, 2019}}%
+\fancyfoot[LO,RE]{\scriptsize{\copyright~bobbriscoe.net Ltd, 2020}}%
 %\fancyfoot[LO,RE]{}%
 \cfoot{\footnotesize{\scriptsize{Version~\metaversion}}}%
 \fancyfoot[RO,LE]{\scriptsize{\thepage~of~\pageref{LastPage}}}%
@@ -147,29 +147,29 @@ Control, Performance, Latency, Responsiveness, Dynamics, Algorithm, Standards}
 \thispagestyle{first}
 
 % ----------------------------------------------------------------
-%\begin{abstract}
-%{\small\noindent%
-%\input{ecn-fallback_tr_abst-data}}      % Abstract
-%\end{abstract}
-%\input{ecn-fallback_tr_intr-data}      % Intro
+\begin{abstract}
+{\small\noindent%
+\input{prresp_abst_tr-data}}      % Abstract
+\end{abstract}
+%\input{ecn-fallback_intr_tr-data}      % Intro
 \input{prresp_body_tr-data}      % Body
-%\input{ecn-fallback_tr_eval-data}      % Evaluation
-%\input{ecn-fallback_tr_relwk-data}     % Related work
-%\input{ecn-fallback_tr_tail-data}      % Tail pieces (discussion, conclusions, plans, acks)
+%\input{prresp_eval_tr-data}      % Evaluation
+%\input{prresp_relwk_tr-data}     % Related work
+%\input{prresp_tail_tr-data}      % Tail pieces (discussion, conclusions, plans, acks)
 % ----------------------------------------------------------------
 
 %\onecolumn%
 %\clearpage
 \addcontentsline{toc}{section}{References}
 
-\newpage
+%\newpage
 {\footnotesize%
 \bibliography{responsiveness}}
 
 % ----------------------------------------------------------------
-%\clearpage
+\clearpage
 %\twocolumn%
-%\appendix
+\appendix
 \input{prresp_appx_tr-data}      % Body
 %\onecolumn%
 % ----------------------------------------------------------------
