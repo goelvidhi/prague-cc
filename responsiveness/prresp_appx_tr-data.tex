@@ -25,11 +25,10 @@ is roughly equivalent to \(n\) repeated reductions with \(1/n\) of the gain.
 Specifically, that \((1 - 1/ng)^n \approx 1 - 1/g\).
 
 \begin{align*}
-(1 - 1/ng)^n &=       1 + \frac{(n-1)}{-ng} + \frac{(n-2)}{(-ng)^2} + \ldots \\
-             &=       1 - \frac{(n-1)}{ng} + O\left(\frac{1}{n(-g)^2}\right)\\
+(1 - 1/ng)^n &=       1 + \frac{n}{-ng} + \frac{n(n-1)}{2(-ng)^2} + \ldots \\
+             &=       1 - \frac{1}{g} + O\left(\frac{1}{g^2}\right)\\
              &\approx 1 - \frac{1}{g}
 \end{align*}
 
 Both \(g\) and \(n\) are lower bounded in practice (\(g\ge2; n\ge2\)), which
-ensures that this approximation is good enough for practical scenarios,
-especially for higher \(n\).
+ensures that this approximation is good enough for practical scenarios.
