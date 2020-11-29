@@ -1,3 +1,8 @@
 % !TeX root = responsiveness_tr
 % ================================================================
-This paper shows that Data Center TCP (DCTCP) introduces unnecessary lag equivalent to 1.5--2 RTTs, due to the way it processes congestion feedback. A per-ACK moving average is proposed that cuts out 1 RTT of this lag. Paradoxically, the rest of the lag is reduced by spreading the congestion response over a round. The EWMA still inherently smooths over the same set number of round trips, even though it is clocked per-ACK.
+This paper shows that Data Center TCP (DCTCP) introduces unnecessary lag
+equivalent to 1.5--2 RTTs, due to the way it processes congestion feedback. A
+per-ACK moving average is proposed that cuts out 1 RTT of this lag.
+Paradoxically, the rest of the lag is reduced by spreading the congestion
+response over a round. The EWMA still inherently smooths over the same set
+number of round trips, even though it is clocked per-ACK.

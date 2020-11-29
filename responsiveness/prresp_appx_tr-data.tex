@@ -3,14 +3,26 @@
 \section{Approximations}\label{prresp_approx}
 
 \balance
-The per-ACK EWMA is not intended to mimic a per-RTT EWMA. Otherwise, the per-ACK EWMA would have to reach the same value by the end of the round, irrespective of whether markings arrived early or late in the round.
-It is more important for the EWMA to quickly accumulate any markings early in the round than it is to ensure that the EWMA reaches precisely the same value by the end of the round. 
+The per-ACK EWMA is not intended to mimic a per-RTT EWMA. Otherwise, the per-ACK
+EWMA would have to reach the same value by the end of the round, irrespective of
+whether markings arrived early or late in the round.
+It is more important for the EWMA to quickly accumulate any markings early in
+the round than it is to ensure that the EWMA reaches precisely the same value by
+the end of the round. 
 
-Neither is it important that a per-ACK EWMA decays at precisely the same rate as a per-round EWMA (assuming they both use the same gain). The gain is not precisely chosen, so if a per-ACK EWMA decays somewhat more slowly, it is unlikely to be critical to performance (if so, a higher gain value can be configured).
+Neither is it important that a per-ACK EWMA decays at precisely the same rate as
+a per-round EWMA (assuming they both use the same gain). The gain is not
+precisely chosen, so if a per-ACK EWMA decays somewhat more slowly, it is
+unlikely to be critical to performance (if so, a higher gain value can be
+configured).
 
-However, it \emph{is} important that a per-ACK EWMA decays at about the same rate however many ACKs there are per round, although the decay rate does not have to be precisely the same.
+However, it \emph{is} important that a per-ACK EWMA decays at about the same
+rate however many ACKs there are per round, although the decay rate does not
+have to be precisely the same.
 
-The per-ACK approach uses the approximation that one reduction with gain \(1/g\) is roughly equivalent to \(n\) repeated reductions with \(1/n\) of the gain. Specifically, that \((1 - 1/ng)^n \approx 1 - 1/g\).
+The per-ACK approach uses the approximation that one reduction with gain \(1/g\)
+is roughly equivalent to \(n\) repeated reductions with \(1/n\) of the gain.
+Specifically, that \((1 - 1/ng)^n \approx 1 - 1/g\).
 
 \begin{align*}
 (1 - 1/ng)^n &=       1 + \frac{n}{-ng} + \frac{(n-1)}{(-ng)^2} + \ldots \\
@@ -18,5 +30,5 @@ The per-ACK approach uses the approximation that one reduction with gain \(1/g\)
              &\approx 1 - \frac{1}{g}
 \end{align*}
 
-Both \(g\) and \(n\) are lower bounded in practice (\(g\ge2; n\ge2\)), which ensures that this approximation is good for practical scenarios.
-.
+Both \(g\) and \(n\) are lower bounded in practice (\(g\ge2; n\ge2\)), which
+ensures that this approximation is good for practical scenarios.
