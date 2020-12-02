@@ -125,37 +125,23 @@ repeatedly subtracting \texttt{av\_up/(flight\_*g)} on the arrival of every ACK
 would reduce \texttt{av\_up} by \texttt{av\_up*flight/(flight\_*g)} in a round
 (see \autoref{prresp_approx}). This approximates to \texttt{av\_up/g} per round.
 
-%\begin{figure*}
 \begin{verbatim}
 On_each_ACK'd_packet {
-    av_up += ce_fb - repetitive_div_1(
-              av_up, flight*g, &av_carry);
-}
-
-// Repeated execution outputs true with 
-//  frequency proportional to num/denom
-bool repetitive_div_1(u32 num, u32 denom,
-                            u32 *carry) {
-    *carry += num;
-    if (*carry >= denom) {
-        *carry -= denom;
-        return true;
-    }
-    return false;
+    // Update EWMA
+    av_carry = 
+         div(av_carry.rem+av_up, flight*g);
+    av_up += ce_fb - av_carry.quot;
 }
 \end{verbatim}
-%\caption{Per-ACK maintenance of an EWMA of marks per round}
-%\label{fig:prresp_per-ack-ewma_av_up}
-%\end{figure*}
 
-This is achieved as shown %in \autoref{fig:prresp_per-ack-ewma_av_up} 
-in the C-like pseudocode above by the repetitive additions, comparisons and
-decrements of a variable called \texttt{av\_carry}, which carries forward the
-remainder between ACKs. 
-
-We have defined the general-purpose function \texttt{repetitive\_div\_1()} for
-the repetitive division, which will be reused later for maintaining the
-congestion window as well.
+The algorithm uses the integer division library function \texttt{div()}, which returns both the quotient and the remainder in a structure of type \texttt{div\_t} as follows:
+\begin{verbatim}
+typedef struct {
+    int quot;
+    int rem;
+} div_t;
+\end{verbatim}
+The variable \texttt{av\_carry} would be declared of type \texttt{div\_t}. It is used to carry forward the remainder to the invocation on the next ACK. The quotient will typically be either 0 or 1, which is then used to decrement the EWMA.
 
 \autoref{fig:per-ack-ewma-verify} compares toy simulations of the above EWMA and
 the DCTCP EWMA (without changing cwnd). It can be seen that, whenever marks
@@ -216,8 +202,10 @@ algorithm first calculates that at least one packet of movement is possible.
 
 \begin{verbatim}
 On_each_ACK'd_packet {
-    av_up += ce_fb - repetitive_div_1(
-              av_up, flight*g, &av_carry);
+    // Update EWMA
+    av_carry = 
+        div(av_carry.rem+av_up, flight*g);
+    av_up += ce_fb - av_carry.quot;
 
     if (!cwr && ce_fb) {
         // Record start of CWR state
@@ -228,8 +216,9 @@ On_each_ACK'd_packet {
         // Check still in CWR round
         if (snd_una < next_seq) {
             // Multiplicative Decrease
-            cwnd -= repetitive_div_1(
-          av_up, flight*g*2, &cwnd_carry);
+            cwnd_carry = div(cwnd_carry.rem
+                     + av_up, flight*g*2);
+            cwnd -= cwnd_carry.quot;
         } else {
             cwr = false;
         }
@@ -299,16 +288,18 @@ Also unlike DCTCP, the proposed algorithm increases \texttt{cwnd} by one segment
 over the actual window of packets in flight, not over the congestion window
 (which might not be fully used).
 
+\begin{figure*}[t]
 \begin{verbatim}
+#include <stdlib.h>
 On_each_ACK'd_packet {
     // Update EWMA
-    av_up += ce_fb - repetitive_div(false,
-            av_up, flight*g, &av_carry);
+    av_carry = div(av_up+av_carry.rem, flight*g);
+    av_up += ce_fb - av_carry.quot;
 
     if (!ce_fb) {
         // Additive Increase
-        cwnd += repetitive_div(false,
-          g*2, flight*g*2, &cwnd_carry);
+        cwnd_carry = div(g*2+cwnd_carry.rem, flight*g*2);
+        cwnd += cwnd_carry.quot;
     } else if (!cwr) {
         // Record start of CWR state
         next_seq = snd_next;
@@ -319,46 +310,28 @@ On_each_ACK'd_packet {
         // Check still in CWR round
         if (snd_una < next_seq) {
             // Multiplicative Decrease
-            cwnd -= repetitive_div(true,
-          av_up, flight*g*2, &cwnd_carry);
+            _denom = flight*g*2;
+            cwnd_carry.rem = _denom - cwnd_carry.rem;
+            cwnd_carry = div(cwnd_carry.rem+av_up, _denom);
+            cwnd_carry.rem = _denom - cwnd_carry.rem;
+            cwnd -= cwnd_carry.quot;
         } else {
             cwr = false;
         }
     }
 }
-
-// Repeated execution outputs true with
-//  frequency proportional to num/denom
-// If subtract==true, flip direction of carry
-bool repetitive_div(bool subtract,
-          u32 num, u32 denom, u32 *carry) {
-    _outcome = false;
-    if (subtract) *carry = denom - *carry;
-    *carry += num;
-    if (*carry >= denom) {
-        *carry -= denom;
-        _outcome = true;
-    }
-    if (subtract) *carry = denom - *carry;
-    return _outcome;
-}
 \end{verbatim}
+\caption{The whole per-ACK AIMD algorithm}
+\label{fig:prresp_per-ack-aimd}
+\end{figure*}
 
 The additive increase stores its remainder in the same \texttt{*cwnd\_carry}
 variable as the multiplicative decrease. So both numerator and denominator are
 scaled up such that AI uses the same denominator parameter as MD, otherwise the
 upscaling of the carry variable would be different.
 
-This also requires the repetitive division function to be modified, to be able
-to either add or subtract the carry. To avoid ambiguity, we have used a slightly
-different function name, \texttt{repetitive\_div()}.
-
-The new \texttt{repetitive\_div()} function has an additional first boolean
-parameter \texttt{subtract}. When false, the function behaves no differently to
-the original \texttt{repetitive\_div\_1()} function. When true, it flips the
-direction of the number space holding the \texttt{*carry} variable, then flips
-it back again before terminating. This is preferable to switching between
-addition and subtraction when altering the carry, which would halve the number
+Naively, the remainder could be added for AI and subtracted for MD. Instead, it is always added, but before and after the MD, it is respectively flipped to the opposite end of the number space of the denominator and back again. Whichever direction cwnd last moved in, this ensures that the remainder always lies in the range [0,\texttt{\_denom}-1].
+This is preferable to handling a negative carry, which would halve the number
 space available for the scaled up variables.
 
 \section{(Non-)Concerns}\label{prresp_Non-Concerns}
@@ -381,7 +354,7 @@ circular dependency.
 
 The reduction to \texttt{cwnd} is spread over the \texttt{flight} packets in a
 round of CWR, so each reduction is scaled down by \texttt{flight} in the
-denominator of the call to \texttt{repetitive\_div()}. This means that the
+denominator of the call to \texttt{div()}. This means that the
 decrease of \texttt{cwnd} is actually by a multiplicative factor of
 \texttt{flight}, not of \texttt{cwnd}.
 
