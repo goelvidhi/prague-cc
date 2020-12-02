@@ -265,7 +265,7 @@ starts CWR state.
 
 \subsubsection{The Whole AIMD Algorithm}\label{prresp_AIMD}
 
-For completeness, the pseudocode below includes a Reno-like additive increase.
+For completeness, the pseudocode in \autoref{fig:prresp_per-ack-aimd} includes a Reno-like additive increase.
 This is intended for periods when the congestion control is close to its
 operating point (if it is not, see \S\,\ref{prresp_future}).
 
@@ -290,7 +290,6 @@ over the actual window of packets in flight, not over the congestion window
 
 \begin{figure*}[t]
 \begin{verbatim}
-#include <stdlib.h>
 On_each_ACK'd_packet {
     // Update EWMA
     av_carry = div(av_up+av_carry.rem, flight*g);
@@ -425,7 +424,7 @@ expose poor approximations in the algorithm (relative to DCTCP):
 \bob{Outcome of the evaluations to be added here.}
 
 \section{Related Work}\label{prresp_related}
-
+\balance
 Reducing \texttt{cwnd} in one RTT by half of the marks per round trip
 (\texttt{av\_up/2/g}) is similar but not the same as Relentless
 TCP~\cite{Mathis09:Relentless}, which reduces \texttt{cwnd} by half a segment on
