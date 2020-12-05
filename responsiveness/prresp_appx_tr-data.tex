@@ -30,14 +30,19 @@ Specifically, that \((1 - 1/ng)^n \approx 1 - 1/g\).
              &\approx 1 - \frac{1}{g}
 \end{align*}
 
-To get a feel for the size of the error, we define the effective gain
-(\(1/g^\prime\)) as the gain of a per-RTT reduction that would be equivalent to
+To quantify the error, we define the effective gain
+(\(1/g^\prime\)) as the per-RTT gain that would give an equivalent reduction to
 multiple smaller per-ACK reductions using the original gain (\(1/g\)).
-Numerically, we find that \(g^\prime \approx g + 1/2\).
+Numerically, we find that \(g^\prime \approx g + 1/2\) (see \autoref{fig:per-ack-approx}).
 
-For instance, multiple reductions with \(g=16\) are roughly equivalent to one
-reduction with \(g^\prime\approx16.5\); or multiple reductions with \(g=4\) are
-roughly equivalent to one reduction with \(g^\prime\approx4.5\).
+\begin{figure}[h]
+	\includegraphics[width=\linewidth]{per-ack-approx}
+	\caption{Difference between gain used for multiple per-ACK reductions, \(g^\prime\), and the gain of one equivalent reduction, \(g\).}
+	\label{fig:per-ack-approx}
+\end{figure}
+
+For instance, multiple reductions with \(g\approx15.5\) are roughly equivalent to one
+reduction with \(g^\prime=16\).
 
 This can be explained because most of the error comes from omission of the
 \(O(1/g^2)\) term. So we set
@@ -51,6 +56,6 @@ g^\prime - g &\approx \frac{g}{(2g-1)}
 \end{align*}
 Other than for low values of \(g\) this difference is indeed roughly \(1/2\). 
 
-The lowest practical value of \(g\) is 2. Multiple reductions using \(g=2\)
-would be equivalent to a single reduction using \(g^\prime\approx2.7\) (i.e.\
-the error in this worst-case is about 0.7).
+The worst-case error occurs when \(g\) is small and \(W\) is large. Multiple reductions using any high value of \(W\) and the lowest practical value of \(g (=2)\)
+would be equivalent to a single reduction using \(g^\prime\approx2.54\) (i.e.\
+the error in this worst-case is about 0.54).
