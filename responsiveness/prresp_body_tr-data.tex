@@ -15,31 +15,30 @@
 \end{figure*}
 
 Common implementations of DCTCP~\cite{Alizadeh10:DCTCP} (e.g.\ in Windows,
-Linux, or FreeBSD~\cite{Bensley17:DCTCP}) take two rounds before a change in
+Linux, or FreeBSD~\cite{Bensley17:DCTCP}) take up to two rounds before a change in
 congestion on the path fully feeds into the moving average that regulates its
 response. This is on top of the inherent round trip of delay in the feedback
 loop.
 
-Both extra rounds are due to the two-stage process for maintaining the EWMA then
-using it to respond to congestion (see \autoref{fig:dctcp-feedback-lag}). The
-first stage introduces a round of delay (RTT\(_i\)) while it accumulates the
-marking fraction before it can calculate the EWMA (\(\alpha_i\)), which it
-passes to the second stage that uses the EWMA to reduce the congestion window
-(\(W\)) by \(\alpha_i W_i\). The second extra round of delay is because the
-first stage clocks independently, while the second stage is triggered by the
-arrival of congestion feedback (a red-coloured ACK).
+Both extra rounds are due to the two-stage process for responding to congestion (see \autoref{fig:dctcp-feedback-lag}). The
+first stage introduces one round of delay (RTT\(_i\)) while it accumulates the
+marking fraction before it can calculate the EWMA (\(\alpha_i\)). It
+passes this to the second stage that reduces the congestion window
+(\(W\)) by \(\alpha_i W_i\). The second extra round arises because the
+second stage is triggered by congestion feedback (a red
+ACK) that occurs independently of the regularly clocked first stage. 
 
 So it takes two rounds before a full round of the congestion that triggered the
 start of the second stage has fed through into the EWMA that the first stage
-passes to the second. This is further exacerbated by entering congestion window
-reduced (CWR) state as soon as the initial inadequate response has been applied,
-which suppresses any further response for a round, while all the congestion
-feedback arrives. Also, the lagged congestion response will tend to overrun into
+passes to the second. This is exacerbated by entering congestion window
+reduced (CWR) state at the first sign of congestion,
+which suppresses any further response for a round, just when more congestion
+feedback is likely. Also, the lagged congestion response will tend to overrun into
 the subsequent round, causing undershoot.
 
 The problem seems to boil down to how to update the EWMA of marking on a per-ACK
-basis. But, more specifically, the problem is how to ensure that the time
-constant over which this per-ACK EWMA smooths itself keeps to a set number of
+basis. But, more specifically, the problem is how to keep the time
+constant over which this per-ACK EWMA smooths itself to a set number of
 rounds, even though the number of packets per round varies.
 
 \section{Per-ACK EWMA}\label{prresp_Per-Packet_EWMA}
@@ -51,13 +50,11 @@ factor, it is proposed to upscale it by \texttt{flight\_ / gain}, where
 single continuous set of repetitive increments or decrements determined on each
 ACK.
 
-As we shall see, scaling up the EWMA by \texttt{flight\_} enables the repetitive
-per-packet operations to \emph{implicitly} smooth the EWMA with a characteristic
-timescale proportionate to the RTT (specifically, \texttt{RTT/gain}).
-
-This contrasts with the two-stage process of accumulating the marking fraction
-for a round before feeding it into an EWMA that is \emph{explicitly} clocked per
-round.
+Although it updates every ACK, we show that scaling up the EWMA by
+\texttt{flight\_} \emph{implicitly} smooths the EWMA over a characteristic
+number of RTTs (specifically, \texttt{RTT/gain}), no matter how many ACKs there
+are per RTT. This contrasts with \emph{explicitly} clocking per
+round that requires the two-stage process with its inherent extra lag.
 
 The scaled up EWMA is effectively a smoothed count of the number of congestion
 marks per RTT, but scaled up by the constant \texttt{1/gain}. The number of
