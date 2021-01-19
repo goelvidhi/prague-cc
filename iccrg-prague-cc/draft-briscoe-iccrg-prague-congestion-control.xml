@@ -303,30 +303,48 @@
         <section title="Accurate ECN Feedback">
           <t>This section addresses Req 4.2. [xref-ecn-l4s-id].</t>
 
-          <t>When ECN feedback was first added to TCP [xref-RFC3168], it was
-          incapable of signalling more than one congestion notification per
-          round trip. The TCP wire protocol has since been updated to allow
-          more accurate feedback [xref-accECN]. Therefore, in the case where a
-          sender uses the Prague CC over TCP, whether as client or
-          server:<list style="symbols">
-              <t>it MUST itself support AccECN;</t>
+          <t>Transport protocols specified recently, .e.g. DCCP <xref
+          target="RFC4340"/>, QUIC <xref target="I-D.ietf-quic-transport"/>,
+          are unambiguously suitable for Prague CCs, because they were
+          designed from the start with accurate ECN feedback. In the case of
+          RTP/RTCP, ECN feedback was added in <xref target="RFC6679"/>, which
+          is sufficient for the Prague CC. However, it is preferable to use
+          the most recent improvements to ECN feedback in <xref
+          target="I-D.ietf-avtcore-cc-feedback-message"/>.</t>
 
-              <t>during the handshake, it MUST also check whether its peer
-              supports accurate ECN feedback.</t>
-            </list>If the peer does not support accurate ECN feedback, the
-          sender MUST fall back to a Reno-friendly CC behaviour for the rest
-          of the connection. The non-Prague TCP sender MUST then no longer set
-          ECT(1) on the packets it sends. Note that a sending TCP client that
-          uses the Prague CC can set ECT(1) on the SYN prior to checking
-          whether the other peer supports AccECN (as long as it follows the
-          procedure in [xref-generalized-ecn] if it discovers the peer does
-          not support AccECN).</t>
+          <t>However, when ECN support was added to earlier protocols,
+          particularly TCP <xref target="RFC3168"/> it only {Move this first,
+          otherwise it's not clear what the problem is}, and and derivatives
+          such as SCTP <xref target="RFC4960"/></t>
 
-          <t>When ECN feedback was added to other transport protocols, such as
-          QUIC [xref-quic-transport] , RTP [xref-rtp-transport] and DCCP
-          [xref-dccp], it was accurate from day one. Therefore, with these
-          transports, Prague CC can be used without a handshake check for ECN
-          feedback support.</t>
+          <t>RTP</t>
+
+          <section title="Accurate ECN Feedback with TCP &amp; Derivatives">
+            <t>When ECN feedback was first added to TCP [xref-RFC3168], it was
+            incapable of signalling more than one congestion notification per
+            round trip. The TCP wire protocol has since been updated to allow
+            more accurate feedback [xref-accECN]. Therefore, in the case where
+            a sender uses the Prague CC over TCP, whether as client or
+            server:<list style="symbols">
+                <t>it MUST itself support AccECN;</t>
+
+                <t>during the handshake, it MUST also check whether its peer
+                supports accurate ECN feedback.</t>
+              </list>If the peer does not support accurate ECN feedback, the
+            sender MUST fall back to a Reno-friendly CC behaviour for the rest
+            of the connection. The non-Prague TCP sender MUST then no longer
+            set ECT(1) on the packets it sends. Note that a sending TCP client
+            that uses the Prague CC can set ECT(1) on the SYN prior to
+            checking whether the other peer supports AccECN (as long as it
+            follows the procedure in [xref-generalized-ecn] if it discovers
+            the peer does not support AccECN).</t>
+
+            <t>When ECN feedback was added to other transport protocols, such
+            as QUIC [xref-quic-transport] , RTP [xref-rtp-transport] and DCCP
+            [xref-dccp], it was accurate from day one. Therefore, with these
+            transports, Prague CC can be used without a handshake check for
+            ECN feedback support.</t>
+          </section>
         </section>
 
         <section anchor="pracc_moving_avg"
@@ -679,6 +697,10 @@
 
       <?rfc include='reference.RFC.3649'?>
 
+      <?rfc include='reference.RFC.4340'?>
+
+      <?rfc include='reference.RFC.4960'?>
+
       <?rfc include='reference.RFC.5033'?>
 
       <?rfc include='reference.RFC.5348'?>
@@ -686,6 +708,8 @@
       <?rfc include='reference.RFC.5681'?>
 
       <?rfc include='reference.RFC.5706'?>
+
+      <?rfc include='reference.RFC.6679'?>
 
       <?rfc include='reference.RFC.7567'?>
 
@@ -734,6 +758,10 @@
       <?rfc include='reference.I-D.briscoe-tsvwg-l4s-diffserv'?>
 
       <?rfc include='reference.I-D.briscoe-docsis-q-protection'?>
+
+      <?rfc include='reference.I-D.ietf-avtcore-cc-feedback-message'?>
+
+      <?rfc include='reference.I-D.ietf-quic-transport'?>
 
       <reference anchor="BBRv1"
                  target="https://tools.ietf.org/html/draft-cardwell-iccrg-bbr-congestion-control-00">
