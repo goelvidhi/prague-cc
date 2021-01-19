@@ -14,11 +14,14 @@
 	\label{fig:dctcp-feedback-lag}
 \end{figure*}
 
-Common implementations of DCTCP~\cite{Alizadeh10:DCTCP} (e.g.\ in Windows,
+This report shows that common implementations of DCTCP~\cite{Alizadeh10:DCTCP} (e.g.\ in Windows,
 Linux, or FreeBSD~\cite{Bensley17:DCTCP}) take up to two rounds before a change in
 congestion on the path fully feeds into the moving average that regulates its
-response. This is on top of the inherent round trip of delay in the feedback
-loop.
+response.
+
+A moving average intentionally dampens responsiveness in order that there will only be a full response to a change if it sustains over the whole averaging period. However, the extra rounds we focus on here represent pure lag before that damping can even start. They are also on top of the inherent round trip of delay in the feedback loop. 
+
+This means that established DCTCP flows take 2 or 3 rounds (rather than 1) before they even start to respond to a reduction in available capacity or yield to a new flow. In turn, this means that a new flow must either build up a large queue before any established flow yields, or it must enter the system very tentatively. Therefore, the algorithm in this report is at least part of a solution to the 'Prague Requirement' for 'faster convergence at flow start'~\cite[Appx A.2.3]{Briscoe15f:ecn-l4s-id_ID}.
 
 Both extra rounds are due to the two-stage process for responding to congestion (see \autoref{fig:dctcp-feedback-lag}). The
 first stage introduces one round of delay (RTT\(_i\)) while it accumulates the
@@ -124,18 +127,18 @@ would reduce \texttt{av\_up} by \texttt{av\_up*flight/(flight\_*g)} in a round
 
 \begin{verbatim}
 On_each_ACK'd_packet {
-    // Update EWMA
-    av_carry = 
-         div(av_carry.rem+av_up, flight*g);
-    av_up += ce_fb - av_carry.quot;
+  // Update EWMA
+  av_carry = 
+    div(av_carry.rem+av_up, flight*g);
+  av_up += ce_fb - av_carry.quot;
 }
 \end{verbatim}
 
 The algorithm uses the integer division library function \texttt{div()}, which returns both the quotient and the remainder in a structure of type \texttt{div\_t} as follows:
 \begin{verbatim}
 typedef struct {
-    int quot;
-    int rem;
+  int quot;
+  int rem;
 } div_t;
 \end{verbatim}
 The variable \texttt{av\_carry} would be declared of type \texttt{div\_t}. It is used to carry forward the remainder to the invocation on the next ACK. The quotient will typically be either 0 or 1, which is then used to decrement the EWMA.
@@ -199,27 +202,27 @@ algorithm first calculates that at least one packet of movement is possible.
 
 \begin{verbatim}
 On_each_ACK'd_packet {
-    // Update EWMA
-    av_carry = 
-        div(av_carry.rem+av_up, flight*g);
-    av_up += ce_fb - av_carry.quot;
+  // Update EWMA
+  av_carry = 
+    div(av_carry.rem+av_up, flight*g);
+  av_up += ce_fb - av_carry.quot;
 
-    if (!cwr && ce_fb) {
-        // Record start of CWR state
-        next_seq = snd_next;
-        cwr = true;
+  if (!cwr && ce_fb) {
+    // Record start of CWR state
+    next_seq = snd_next;
+    cwr = true;
+  }
+  if (cwr) {
+    // Check still in CWR round
+    if (snd_una < next_seq) {
+      // Multiplicative Decrease
+      cwnd_carry = div(cwnd_carry.rem 
+                   + av_up, flight*g*2);
+      cwnd -= cwnd_carry.quot;
+    } else {
+      cwr = false;
     }
-    if (cwr) {
-        // Check still in CWR round
-        if (snd_una < next_seq) {
-            // Multiplicative Decrease
-            cwnd_carry = div(cwnd_carry.rem
-                     + av_up, flight*g*2);
-            cwnd -= cwnd_carry.quot;
-        } else {
-            cwr = false;
-        }
-    }
+  }
 }
 \end{verbatim}
 
@@ -262,9 +265,51 @@ starts CWR state.
 
 \subsubsection{The Whole AIMD Algorithm}\label{prresp_AIMD}
 
-For completeness, the pseudocode in \autoref{fig:prresp_per-ack-aimd} includes a Reno-like additive increase.
+For completeness, the pseudocode below %in \autoref{fig:prresp_per-ack-aimd} 
+includes a Reno-like additive increase.
 This is intended for periods when the congestion control is close to its
 operating point (if it is not, see \S\,\ref{prresp_future}).
+
+%\begin{figure}[t]
+\begin{verbatim}
+On_each_ACK'd_packet {
+  // Update EWMA
+  av_carry = 
+    div(av_up+av_carry.rem, flight*g);
+  av_up += ce_fb - av_carry.quot;
+
+  if (!ce_fb) {
+    // Additive Increase
+    cwnd_carry = 
+      div(g*2+cwnd_carry.rem, flight*g*2);
+    cwnd += cwnd_carry.quot;
+  } else if (!cwr) {
+    // Record start of CWR state
+    next_seq = snd_next;
+    cwr = true;
+  }
+
+  if (cwr) {
+    // Check still in CWR round
+    if (snd_una < next_seq) {
+      // Multiplicative Decrease
+      _denom = flight*g*2;
+      cwnd_carry.rem = 
+        _denom - cwnd_carry.rem;
+      cwnd_carry = 
+        div(cwnd_carry.rem+av_up, _denom);
+      cwnd_carry.rem = 
+        _denom - cwnd_carry.rem;
+      cwnd -= cwnd_carry.quot;
+    } else {
+      cwr = false;
+    }
+  }
+}
+\end{verbatim}
+%\caption{The whole per-ACK AIMD algorithm}
+%\label{fig:prresp_per-ack-aimd}
+%\end{figure}
 
 Unlike DCTCP, the proposed algorithm does not suspend additive increase during
 CWR state, with the following reasoning. DCTCP-like congestion controls are
@@ -284,42 +329,6 @@ rises (see \S\,3.1 of \cite{Briscoe17a:CC_Tensions_TR}).
 Also unlike DCTCP, the proposed algorithm increases \texttt{cwnd} by one segment
 over the actual window of packets in flight, not over the congestion window
 (which might not be fully used).
-
-\begin{figure*}[t]
-\begin{verbatim}
-On_each_ACK'd_packet {
-    // Update EWMA
-    av_carry = div(av_up+av_carry.rem, flight*g);
-    av_up += ce_fb - av_carry.quot;
-
-    if (!ce_fb) {
-        // Additive Increase
-        cwnd_carry = div(g*2+cwnd_carry.rem, flight*g*2);
-        cwnd += cwnd_carry.quot;
-    } else if (!cwr) {
-        // Record start of CWR state
-        next_seq = snd_next;
-        cwr = true;
-    }
-
-    if (cwr) {
-        // Check still in CWR round
-        if (snd_una < next_seq) {
-            // Multiplicative Decrease
-            _denom = flight*g*2;
-            cwnd_carry.rem = _denom - cwnd_carry.rem;
-            cwnd_carry = div(cwnd_carry.rem+av_up, _denom);
-            cwnd_carry.rem = _denom - cwnd_carry.rem;
-            cwnd -= cwnd_carry.quot;
-        } else {
-            cwr = false;
-        }
-    }
-}
-\end{verbatim}
-\caption{The whole per-ACK AIMD algorithm}
-\label{fig:prresp_per-ack-aimd}
-\end{figure*}
 
 The additive increase stores its remainder in the same \texttt{*cwnd\_carry}
 variable as the multiplicative decrease. So both numerator and denominator are

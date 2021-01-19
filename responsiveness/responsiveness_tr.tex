@@ -165,7 +165,9 @@ Control, Performance, Latency, Responsiveness, Dynamics, Algorithm, Standards}
 \addcontentsline{toc}{section}{References}
 
 %\newpage
-{\footnotesize%
+{%
+%\footnotesize%
+\scriptsize%
 \bibliography{responsiveness}}
 
 % ----------------------------------------------------------------
@@ -187,7 +189,7 @@ Version &Date &Author &Details of change \\
 00A          &07 Nov 2020&Bob Briscoe &First draft.\\\hline%
 00B          &29 Nov 2020&Bob Briscoe &Added \texttt{cwnd} reduction and increase. Defined reusable function \texttt{repetitive\_div()}. Corrected use of \texttt{cwnd} to \texttt{flight}, and distinguished current \texttt{flight}, from \texttt{flight\_} when marks were averaged. Added abstract; schematic of problem; sections on evaluation plan, related work and future work; and appendix on approximations.\\\hline%
 00C &02 Dec 2020  &Bob Briscoe &Altered algorithms from hand-crafted repetitive\_div() to div() in stdlib\\\hline%
-\metaversion &\metadate  &Bob Briscoe &Added CC to title, altered abstract and issued.\\\hline%
+\metaversion &\metadate  &Bob Briscoe &Added CC to title, altered abstract, added motivation to intro and issued.\\\hline%
 \hline%
 \end{tabular}
 
