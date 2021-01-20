@@ -17,13 +17,13 @@
 This report shows that common implementations of DCTCP~\cite{Alizadeh10:DCTCP} (e.g.\ in Windows,
 Linux, or FreeBSD~\cite{Bensley17:DCTCP}) take up to two rounds before a change in
 congestion on the path fully feeds into the moving average that regulates its
-response.
+response. This is on top of the inherent round trip of delay in the feedback loop. 
 
-A moving average intentionally dampens responsiveness in order that there will only be a full response to a change if it sustains over the whole averaging period. However, the extra rounds we focus on here represent pure lag before that damping can even start. They are also on top of the inherent round trip of delay in the feedback loop. 
+A moving average intentionally dampens responsiveness so that there will only be a full response to a change if it sustains over the whole averaging period. However, the extra rounds we focus on here represent pure lag before that damping can even start. 
 
 This means that established DCTCP flows take 2 or 3 rounds (rather than 1) before they even start to respond to a reduction in available capacity or yield to a new flow. In turn, this means that a new flow must either build up a large queue before any established flow yields, or it must enter the system very tentatively. Therefore, the algorithm in this report is at least part of a solution to the 'Prague Requirement' for 'faster convergence at flow start'~\cite[Appx A.2.3]{Briscoe15f:ecn-l4s-id_ID}.
 
-Both extra rounds are due to the two-stage process for responding to congestion (see \autoref{fig:dctcp-feedback-lag}). The
+Both extra rounds are due to DCTCP's two-stage process for responding to congestion (see \autoref{fig:dctcp-feedback-lag}). The
 first stage introduces one round of delay (RTT\(_i\)) while it accumulates the
 marking fraction before it can calculate the EWMA (\(\alpha_i\)). It
 passes this to the second stage that reduces the congestion window
@@ -275,13 +275,13 @@ operating point (if it is not, see \S\,\ref{prresp_future}).
 On_each_ACK'd_packet {
   // Update EWMA
   av_carry = 
-    div(av_up+av_carry.rem, flight*g);
+    div(av_carry.rem+av_up, flight*g);
   av_up += ce_fb - av_carry.quot;
 
   if (!ce_fb) {
     // Additive Increase
     cwnd_carry = 
-      div(g*2+cwnd_carry.rem, flight*g*2);
+      div(cwnd_carry.rem+g*2, flight*g*2);
     cwnd += cwnd_carry.quot;
   } else if (!cwr) {
     // Record start of CWR state
@@ -413,10 +413,9 @@ oscillations.
 
 Our motivation for improving DCTCP's responsiveness is to ensure established
 flows yield quickly when new flows are trying to enter the system, without
-having to build a queue. However, it is possible that improved responsiveness
-will help address the incast problem, which will not have been helped by up to
-two rounds of unnecessary lag. Therefore, incast experiments could be of
-interest.
+having to build a queue. However, removing up to two rounds of unnecessary lag
+should also help to address the incast problem, at least for transfers that last
+longer than one round. Therefore, incast experiments could also be of interest.
 
 It will also be necessary to check performance in the following cases that might
 expose poor approximations in the algorithm (relative to DCTCP):
