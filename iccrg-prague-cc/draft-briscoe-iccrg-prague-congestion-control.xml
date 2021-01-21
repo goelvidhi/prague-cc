@@ -602,7 +602,19 @@
       <t/>
 
       <section anchor="pracc_faster_ai" title="Faster than Additive Increase">
-        <t>{ToDo}</t>
+        <t>{ToDo:} Two aspects:<list style="hanging">
+            <t hangText="Increasing faster:">Exploiting the invariant frequent
+            congestion signal to rapidly detect when available capacity has
+            appeared, and to start probing for the new operating point, e.g.
+            using paced chirps (see S.3.2.3 of <xref
+            target="PragueLinux"/>).</t>
+
+            <t hangText="Yielding faster:">Removing the 1-2 rounds of
+            unnecessary lag in DCTCP's feedback processing, to yield more
+            rapidly when new flows enter the system, in order to enable faster
+            convergence without the new flow having to push up queuing <xref
+            target="PerAckEWMA"/>.</t>
+          </list></t>
       </section>
 
       <section anchor="pracc_delay-based"
@@ -1209,6 +1221,23 @@
 
         <seriesInfo name="Proc. Int'l Soc. for Optical Engineering (SPIE)"
                     value="4866:35--46 DOI: 10.1117/12.473021"/>
+      </reference>
+
+      <reference anchor="PerAckEWMA" target="https://arxiv.org/abs/2101.07727">
+        <front>
+          <title>Improving DCTCP/Prague Congestion Control
+          Responsiveness</title>
+
+          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
+            <organization>Independent</organization>
+          </author>
+
+          <date day="20" month="January" year="2021"/>
+        </front>
+
+        <seriesInfo name="Technical Report" value="TR-BB-2020-002"/>
+
+        <format target="https://arxiv.org/pdf/2101.07727" type="PDF"/>
       </reference>
     </references>
 
