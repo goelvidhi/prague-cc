@@ -361,11 +361,13 @@
           because performance has proved to be sensitive to implementation
           precision in this area. So first, some background is necessary.</t>
 
-          <t>Every round trip, the Prague CC measures the fraction, frac, of
-          ACKed bytes that carried ECN feedback over the previous round trip.
-          It then updates an exponentially weighted moving average (EWMA) of
-          this fraction, called alpha, using the following algorithm:<list
-              style="empty">
+          <t>The Prague CC triggers update of its moving average once per RTT
+          by recording the packet it sent after the previous update, then
+          watching for the ACK of that packet to return. To maintain its
+          moving average, it measures the fraction, frac, of ACKed bytes that
+          carried ECN feedback over the previous round trip. It then updates
+          an exponentially weighted moving average (EWMA) of this fraction,
+          called alpha, using the following algorithm:<list style="empty">
               <t>alpha += g * (frac - alpha);</t>
             </list>where g is the gain of the EWMA (default 1/16).</t>
 
@@ -458,42 +460,70 @@
           work on congestion control using a combination of delay, ECN and
           loss.</t>
 
-          <t><list style="hanging">
-              <t hangText="Implementation note:">A Prague CC cannot rely on
-              the fall-back-on-loss behaviour of the DCTCP code in the Linux
-              kernel prior to v5.1, due to a previous bug in the fast
+          <t>Implementation note:<list style="hanging">
+              <t hangText="DCTCP bug prior to v5.1:">A Prague CC cannot rely
+              on the fall-back-on-loss behaviour of the DCTCP code in the
+              Linux kernel prior to v5.1, due to a previous bug in the fast
               retransmit code (but not in the retransmission timeout code)
               <xref target="patch-loss-react"/>.</t>
             </list></t>
         </section>
 
         <section title="Multiplicative Decrease on ECN Feedback">
-          <t>This section addresses the 'Invariant Recovery Time' aspect of
-          Req 4.3. [xref-ecn-l4s-id].</t>
+          <t>The Prague CC currently responds to ECN feedback in a similar way
+          to DCTCP. This section is provided mainly because performance has
+          proved to be sensitive to implementation details in this area. So
+          the following recap of the congestion response is needed first.</t>
 
-          <t>The Prague CC maintains the moving average of ECN-marking, alpha,
-          once per round trip throughout a connection. However, it only
+          <t>As explained in <xref target="pracc_moving_avg"/>, the Prague CC
+          (like DCTCP) clocks its moving average of ECN-marking, alpha, once
+          per round trip throughout a connection. Nonetheless, it only
           triggers a multiplicative decrease to its congestion window when it
           actually receives an ACK carrying ECN feedback. Then it suppresses
           any further decreases for one round trip, even if it receives
-          further ECN feedback.</t>
+          further ECN feedback. This is termed Congestion Window Reduced or
+          CWR state.</t>
 
-          <t>The size of the multiplicative decrease depends on the prevailing
-          value of alpha as follows:<list style="empty">
+          <t>The Praguee CC (like DCTCP) ensures that the average recovery
+          time remains invariant as flow rate scales (Req 4.3 of <xref
+          target="I-D.ietf-tsvwg-ecn-l4s-id"/>) by making the multiplicative
+          decrease depend on the prevailing value of alpha as follows:<list
+              style="empty">
               <t>ssthresh = (1 - alpha/2) * cwnd;</t>
             </list></t>
 
-          <t>where, with reference to the earlier discussion of integer
-          arithmetic precision, alpha = g * upscaled_alpha.</t>
+          <t>Implementation notes:<list style="hanging">
+              <t hangText="Upscaled alpha:">With reference to the earlier
+              discussion of integer arithmetic precision (<xref
+              target="pracc_moving_avg"/>), alpha = g * upscaled_alpha.</t>
+
+              <t hangText="Carry of fractional cwnd remainder:">Typically the
+              absolute reduction in cwnd is only a small number of segments.
+              So, if the Prague CC implementation counts the window in integer
+              segments (as in the Linux reference code), delay can be made
+              significantly less jumpy by tracking a fractional value
+              alongside the integer window and carrying over any fractional
+              remainder to the next reduction. Also, integer rounding bias
+              ought to be removed from the multiplicative decrease
+              calculation.</t>
+            </list></t>
+
+          <t>In dynamic scenarios, as flows find a new operating point, alpha
+          will have often tailed away to near-nothing before the onset of
+          congestion. Then DCTCP's tiny reduction followed by no further
+          response for a round is precisely the wrong way for a CC to respond.
+          A solution to this problem is being evaluated as part of the work
+          already mentioned to improve Prague's responsiveness (see <xref
+          target="pracc_faster_response"/> in the section on variants and
+          future work).</t>
         </section>
 
         <section title="Additive Increase and ECN Feedback">
           <t>Unlike DCTCP, the Prague CC does not suppress additive increase
-          for one round trip after a congestion window reduction. Instead, a
-          Prague CC {SHOULD apply}-&gt;(KDS: or is it just applies... do we
-          inform or require?) additive increase only for ACKed bytes without
-          ECN marking, irrespective of its CWR state. Specifically, on each
-          ACK,<figure>
+          for one round trip after a congestion window reduction (while in CWR
+          state). Instead, a Prague CC applies additive increase irrespective
+          of its CWR state, but only for bytes that have been ACK'd without
+          ECN feedback. Specifically, on each ACK,<figure>
               <artwork><![CDATA[    cwnd += (acked_sacked - ece_delta) * ai_per_rtt / cwnd;
 ]]></artwork>
             </figure>where:<list style="empty">
@@ -503,32 +533,33 @@
               <t>ece_delta is the number of newly acknowledge ECN-marked
               bytes;</t>
 
-              <t>ai_ack is a scaling factor that is typically 1 except for
-              small RTTs (see <xref target="pracc_rtt_independence"/>)</t>
+              <t>ai_per_rtt is a scaling factor that is typically 1 SMSS
+              except for small RTTs (see <xref
+              target="pracc_rtt_independence"/>)</t>
             </list></t>
 
-          <t>This approach reduces additive increase as the marking
-          probability increases, which tends to keep the marking level
-          unsaturated (below 100%) [xref-tensions; S.3.1]. Under stable
-          conditions, Prague's congestion window then becomes proportional to
-          (1-p)/p, rather than 1/p.</t>
+          <t>Superficially, the traditional suppression of additive increase
+          for the round after a decrease seems to make sense. However, DCTCP
+          and Prague are designed to induce an average of 2 congestion marks
+          per RTT in steady state, which leaves very little space for any
+          increase between the end of one round of CWR and the next mark. In
+          tests, when a test version of Prague CC is configured to completely
+          suppress additive increase during CWR (like Reno and DCTCP), it
+          sawteeth become more irregular, which is its way of making some
+          decreases large enough to open up enough space for an increase. This
+          irregularity tends to reduce link utilization. Therefore, the
+          reference Prague CC continues additive increase irrespective of CWR
+          state.</t>
 
-          <t>If, instead, a Prague CC were to completely suppress additive
-          increase while in CWR state, at low BDPs its sawtooth amplitude
-          would increase and tend to under-utilize the link - just when
-          available capacity is already limited.</t>
+          <t>Nonetheless, rather than continue additive increase regardless of
+          congestion, it is safer to only increase on those ACKs that do not
+          feed back congestion. This approach reduces additive increase as the
+          marking probability increases, which tends to keep the marking level
+          unsaturated (below 100%) (see Section 3.1 of <xref
+          target="Tensions17"/>). Under stable conditions, Prague's congestion
+          window then becomes proportional to (1-p)/p, rather than 1/p.</t>
 
-          <t><list style="hanging">
-              <t hangText="Implementation note:">In order to operate with a
-              permanent, (very) low, marking probability, the arithmetic
-              around cwnd ought to be updated to track a fractional value
-              alongside the integer part. This both improves precision,
-              avoiding avalanche effects as remainders are carried to the next
-              operation, and improves responsiveness, as the AQM at the
-              bottleneck can control the flow without drastic marking
-              probability increases. Also, integer rounding bias ought to be
-              removed from the multiplicative decrease calculation.</t>
-            </list>See also 'Faster than Additive Increase' (<xref
+          <t>See also 'Faster than Additive Increase' (<xref
           target="pracc_faster_ai"/>)</t>
         </section>
 
@@ -639,6 +670,11 @@
           processing, to yield more rapidly when new flows enter the system,
           in order to enable faster convergence without the new flow having to
           push up queuing <xref target="PerAckEWMA"/>.</t>
+
+          <t>Traditionally, TCP suppressed further response to congestion for
+          a round trip because it had already triggered a large reduction
+          (halving) at the first sign of congestion. DCTCP inherited the round
+          trip of suppression, but not the large reduction.</t>
         </section>
       </section>
 
@@ -1308,6 +1344,29 @@
 
         <format target="https://github.com/torvalds/linux/commit/aecfde23108b8e637d9f5c5e523b24fb97035dc3"
                 type="HTML"/>
+      </reference>
+
+      <reference anchor="Tensions17" target="https://arxiv.org/abs/1904.07605">
+        <front>
+          <title>Resolving Tensions between Congestion Control Scaling
+          Requirements</title>
+
+          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
+            <organization/>
+          </author>
+
+          <author fullname="Koen De Schepper" initials="K. "
+                  surname="De Schepper">
+            <organization/>
+          </author>
+
+          <date month="July" year="2017"/>
+        </front>
+
+        <seriesInfo name="Simula Technical Report"
+                    value="TR-CS-2016-001; arXiv:1904.07605"/>
+
+        <format target="https://arxiv.org/pdf/1904.07605" type="PDF"/>
       </reference>
     </references>
 
