@@ -145,14 +145,19 @@
 
       <section anchor="pracc_motivation"
                title="Motivation: Low Delay /and/ High Bandwidth">
-        <t>{ToDo: Copy largely from netdev Prague paper}</t>
+        <t>{ToDo: Copy largely from netdev Prague paper.}</t>
 
         <t>Not just for today's scale - mention scaling as well as low delay,
         high bandwidth.</t>
       </section>
 
       <section anchor="pracc_roadmap" title="Document Purpose and Roadmap">
-        <t>{ToDo}</t>
+        <t>{ToDo: Explain that there is not 'One True Prague CC'. L4S is
+        intended to enable development of any scalable CC that meets the
+        Prague requirements. This doc is only meant to describe a reference
+        implementation. It doesn't satisfy all the requirements, and the IETF
+        might decide that certain requirements need to be relaxed as an
+        outcome of the process of trying to satisfy them all.} </t>
       </section>
 
       <section anchor="pracc_Terminology" title="Terminology">
@@ -277,19 +282,21 @@
     </section>
 
     <section anchor="pracc_prague_cc" title="Prague Congestion Control">
-      <t/>
+      <t>{ToDo: In each subsection, change "This section addresses Req 4.1.
+      [xref-ecn-l4s-id]." to a parenthesis after a (probably pre-existing)
+      sentence that describes the requirement.}</t>
 
       <section anchor="pracc_pkt_id" title="Packet Identification">
-        <t>This section addresses Req 4.1. [xref-ecn-l4s-id].</t>
-
         <t>On the public Internet, a sender using the Prague CC MUST set the
         ECT(1) codepoint on all the packets it sends, in order to identify
-        itself as an L4S-capable congestion control [xref-ecn-l4s-id].</t>
+        itself as an L4S-capable congestion control (Req 4.1 <xref
+        target="I-D.ietf-tsvwg-ecn-l4s-id"/>).</t>
 
         <t>This applies whatever the transport protocol, whether TCP, QUIC,
         RTP, etc. In the case of TCP, unlike an RFC 3168 TCP ECN transport, a
         sender can set all packets as ECN-capable, including TCP control
-        packets and retransmissions [xref-RFC8311] [xref-generalized-ecn].</t>
+        packets and retransmissions <xref target="RFC8311"/>, <xref
+        target="I-D.ietf-tcpm-generalized-ecn"/>.</t>
 
         <t>The Prague CC SHOULD optionally be configurable to use the ECT(0)
         codepoint in private networks, such as data centres, which might be
@@ -301,83 +308,79 @@
         <t/>
 
         <section title="Accurate ECN Feedback">
-          <t>This section addresses Req 4.2. [xref-ecn-l4s-id].</t>
-
-          <t>Transport protocols specified recently, .e.g. DCCP <xref
-          target="RFC4340"/>, QUIC <xref target="I-D.ietf-quic-transport"/>,
-          are unambiguously suitable for Prague CCs, because they were
-          designed from the start with accurate ECN feedback. In the case of
-          RTP/RTCP, ECN feedback was added in <xref target="RFC6679"/>, which
-          is sufficient for the Prague CC. However, it is preferable to use
-          the most recent improvements to ECN feedback in <xref
-          target="I-D.ietf-avtcore-cc-feedback-message"/>.</t>
-
-          <t>However, when ECN support was added to earlier protocols,
-          particularly TCP <xref target="RFC3168"/> it only {Move this first,
-          otherwise it's not clear what the problem is}, and and derivatives
-          such as SCTP <xref target="RFC4960"/></t>
-
-          <t>RTP</t>
+          <t>When feedback of ECN markings was added to TCP <xref
+          target="RFC3168"/>, it was decided not to report any more than one
+          mark per RTT. L4S-capable congestion controls need to know the
+          extent, not just the existence of congestion (Req 4.2. <xref
+          target="I-D.ietf-tsvwg-ecn-l4s-id"/>). Recently defined transports
+          (DCCP, QUIC, etc) typically already satisfy this requirement. So
+          they are dealt with separately below, while TCP and derivatives such
+          as SCTP <xref target="RFC4960"/> are covered first. </t>
 
           <section title="Accurate ECN Feedback with TCP &amp; Derivatives">
-            <t>When ECN feedback was first added to TCP [xref-RFC3168], it was
-            incapable of signalling more than one congestion notification per
-            round trip. The TCP wire protocol has since been updated to allow
-            more accurate feedback [xref-accECN]. Therefore, in the case where
-            a sender uses the Prague CC over TCP, whether as client or
-            server:<list style="symbols">
+            <t>The TCP wire protocol is being updated to allow more accurate
+            feedback (AccECN <xref target="I-D.ietf-tcpm-accurate-ecn"/>).
+            Therefore, in the case where a sender uses the Prague CC over TCP,
+            whether as client or server:<list style="symbols">
                 <t>it MUST itself support AccECN;</t>
 
-                <t>during the handshake, it MUST also check whether its peer
-                supports accurate ECN feedback.</t>
+                <t>to support AccECN it also has to check that its peer
+                supports AccECN during the handshake.</t>
               </list>If the peer does not support accurate ECN feedback, the
             sender MUST fall back to a Reno-friendly CC behaviour for the rest
             of the connection. The non-Prague TCP sender MUST then no longer
-            set ECT(1) on the packets it sends. Note that a sending TCP client
-            that uses the Prague CC can set ECT(1) on the SYN prior to
-            checking whether the other peer supports AccECN (as long as it
-            follows the procedure in [xref-generalized-ecn] if it discovers
-            the peer does not support AccECN).</t>
+            set ECT(1) on the packets it sends. Note that the peer only needs
+            to support AccECN; there is no need (and no way) to find out
+            whether the peer is using an L4S-capable congestion control.</t>
 
-            <t>When ECN feedback was added to other transport protocols, such
-            as QUIC [xref-quic-transport] , RTP [xref-rtp-transport] and DCCP
-            [xref-dccp], it was accurate from day one. Therefore, with these
-            transports, Prague CC can be used without a handshake check for
-            ECN feedback support.</t>
+            <t>Note that a sending TCP client that uses the Prague CC can set
+            ECT(1) on the SYN prior to checking whether the other peer
+            supports AccECN (as long as it follows the procedure in <xref
+            target="I-D.ietf-tcpm-generalized-ecn"/> if it discovers the peer
+            does not support AccECN).</t>
+          </section>
+
+          <section title="Accurate ECN Feedback with Other Modern Transports">
+            <t>Transport protocols specified recently, .e.g. DCCP <xref
+            target="RFC4340"/>, QUIC <xref target="I-D.ietf-quic-transport"/>,
+            are unambiguously suitable for Prague CCs, because they were
+            designed from the start with accurate ECN feedback.</t>
+
+            <t>In the case of RTP/RTCP, ECN feedback was added in <xref
+            target="RFC6679"/>, which is sufficient for the Prague CC.
+            However, it is preferable to use the most recent improvements to
+            ECN feedback in <xref
+            target="I-D.ietf-avtcore-cc-feedback-message"/>.</t>
           </section>
         </section>
 
         <section anchor="pracc_moving_avg"
                  title="Moving Average of ECN Feedback">
+          <t>The Prague CC currently maintains a moving average of ECN
+          feedback in a similar way to DCTCP. This section is provided mainly
+          because performance has proved to be sensitive to implementation
+          precision in this area. So first, some background is necessary.</t>
+
           <t>Every round trip, the Prague CC measures the fraction, frac, of
           ACKed bytes that carried ECN feedback over the previous round trip.
           It then updates an exponentially weighted moving average (EWMA) of
-          this fraction, which is called alpha, using the following
-          algorithm:<list style="empty">
+          this fraction, called alpha, using the following algorithm:<list
+              style="empty">
               <t>alpha += g * (frac - alpha);</t>
             </list>where g is the gain of the EWMA (default 1/16).</t>
 
-          <t>Currently this approach, which was inherited from DCTCP, is the
-          default in the Prague CC. However, other approaches are being
-          investigated, because this approach introduces multiple rounds of
-          delay into the congestion response. As well as the inherent round
-          trip of feedback delay, it introduces another round trip of delay
-          while the Prague CC measures frac, before it can even start to
-          respond to a change in congestion. And then the EWMA adds further
-          rounds of sluggishness.</t>
-
           <t>Implementation notes:<list style="hanging">
-              <t hangText="Rounding problems in DCTCP:">In principle, Linux
-              DCTCP maintains the moving average 'alpha' using the same
-              formula as Prague CC uses (as above). Alpha is a fraction
+              <t hangText="Rounding problems in DCTCP:">Alpha is a fraction
               between 0 and 1, and it needs to be represented with high
-              resolution because the larger the BDP of a flow, the smaller the
-              value that alpha converges to (in steady state alpha = 2/cwnd).
-              Linux represents alpha with a 10-bit integer (with resolution
-              1/1024). However, up to kernel release 3.19, Linux used integer
-              arithmetic that could not reduce alpha below 15/1024. Then it
-              was patched so that any value below 16/1024 was rounded down to
-              zero. For a flow with a higher bandwidth-delay product (BDP)
+              resolution because the larger the bandwidth-delay product (BDP)
+              of a flow, the smaller the value that alpha converges to (in
+              steady state alpha = 2/cwnd). In principle, Linux DCTCP
+              maintains the moving average 'alpha' using the same formula as
+              Prague CC uses (as above). Linux represents alpha with a 10-bit
+              integer (with resolution 1/1024). However, up to kernel release
+              3.19, Linux used integer arithmetic that could not reduce alpha
+              below 15/1024. Then it was patched so that any value below
+              16/1024 was rounded down to zero. For a flow with a higher BDP
               than 128 segments, this means that, alpha flip-flops. Once it
               has flopped down to zero DCTCP becomes unresponsive until it has
               built sufficient queue to flip up to 16/1024. For larger BDPs,
@@ -386,14 +389,21 @@
               algorithm.</t>
 
               <t hangText="Upscaled alpha in Prague CC:">To resolve the above
-              problem the implementation of TCP Prague in Linux uses 20 bits
-              for alpha, and it maintains upscaled_alpha = alpha/g instead of
-              alpha:<list style="empty">
+              problem the implementation of TCP Prague in Linux maintains
+              upscaled_alpha = alpha/g instead of alpha:<list style="empty">
                   <t>upscaled_alpha += frac - g * upscaled_alpha;</t>
-                </list>This technique is the same as Linux uses for srtt and
-              mdev. A back-port to DCTCP was offered for the Linux mainline
-              branch but declined [xref- upscaled-alpha-patch].</t>
+                </list>This technique is the same as Linux uses for the
+              retransmission timer variables, srtt and mdev. Prague CC also
+              uses 20 bits for alpha, </t>
             </list></t>
+
+          <t>Currently the above per-RTT update to the moving average, which
+          was inherited from DCTCP, is the default in the Prague CC. However,
+          another approach is being investigated because these per-RTT updates
+          introduce 1--2 rounds of delay into the congestion response on top
+          of the inherent round of feedback delay (see <xref
+          target="pracc_faster_response"/> in the section on variants and
+          future work). </t>
         </section>
 
         <section title="Scaling Loss Detection with Flow Rate">
@@ -594,27 +604,37 @@
       </section>
 
       <section anchor="pracc_flow_start" title="Flow Start or Restart">
-        <t>{ToDo}</t>
+        <t>{ToDo: Probably ought to be moved to S.5}</t>
       </section>
     </section>
 
     <section title="Variants and Future Work">
       <t/>
 
-      <section anchor="pracc_faster_ai" title="Faster than Additive Increase">
-        <t>{ToDo:} Two aspects:<list style="hanging">
-            <t hangText="Increasing faster:">Exploiting the invariant frequent
-            congestion signal to rapidly detect when available capacity has
-            appeared, and to start probing for the new operating point, e.g.
-            using paced chirps (see S.3.2.3 of <xref
-            target="PragueLinux"/>).</t>
+      <section title="Getting up to Speed Faster">
+        <t/>
 
-            <t hangText="Yielding faster:">Removing the 1-2 rounds of
-            unnecessary lag in DCTCP's feedback processing, to yield more
-            rapidly when new flows enter the system, in order to enable faster
-            convergence without the new flow having to push up queuing <xref
-            target="PerAckEWMA"/>.</t>
-          </list></t>
+        <section anchor="pracc_faster_ai"
+                 title="Faster than Additive Increase">
+          <t>{ToDo:} Exploiting the invariant frequent congestion signal to
+          rapidly detect when available capacity has appeared, and to start
+          probing for the new operating point, e.g. using paced chirps (see
+          S.3.2.3 of <xref target="PragueLinux"/>).</t>
+        </section>
+
+        <section anchor="pracc_faster_response"
+                 title="Remove Lag in Congestion Response">
+          <t>{ToDo: stitch this text in: As well as the inherent round trip of
+          feedback delay, it introduces another round trip of delay while the
+          Prague CC measures frac, before it can even start to respond to a
+          change in congestion. And then the EWMA adds further rounds of
+          sluggishness. Also mention invariant scale of moving average.}</t>
+
+          <t>Removing the 1-2 rounds of unnecessary lag in DCTCP's feedback
+          processing, to yield more rapidly when new flows enter the system,
+          in order to enable faster convergence without the new flow having to
+          push up queuing <xref target="PerAckEWMA"/>.</t>
+        </section>
       </section>
 
       <section anchor="pracc_delay-based"
@@ -765,6 +785,8 @@
 
       <?rfc include='reference.I-D.ietf-tsvwg-l4s-arch'?>
 
+      <?rfc include='reference.I-D.ietf-tsvwg-ecn-l4s-id'?>
+
       <?rfc include='reference.I-D.ietf-tsvwg-nqb'?>
 
       <?rfc include='reference.I-D.briscoe-tsvwg-l4s-diffserv'?>
@@ -772,6 +794,10 @@
       <?rfc include='reference.I-D.briscoe-docsis-q-protection'?>
 
       <?rfc include='reference.I-D.ietf-avtcore-cc-feedback-message'?>
+
+      <?rfc include='reference.I-D.ietf-tcpm-accurate-ecn'?>
+
+      <?rfc include='reference.I-D.ietf-tcpm-generalized-ecn'?>
 
       <?rfc include='reference.I-D.ietf-quic-transport'?>
 
