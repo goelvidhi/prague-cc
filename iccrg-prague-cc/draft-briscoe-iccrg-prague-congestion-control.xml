@@ -787,8 +787,6 @@
 
       <?rfc include='reference.I-D.ietf-tsvwg-l4s-arch'?>
 
-      <?rfc include='reference.I-D.ietf-tsvwg-ecn-l4s-id'?>
-
       <?rfc include='reference.I-D.ietf-tsvwg-nqb'?>
 
       <?rfc include='reference.I-D.briscoe-tsvwg-l4s-diffserv'?>
@@ -1270,7 +1268,8 @@
         <format target="https://arxiv.org/pdf/2101.07727" type="PDF"/>
       </reference>
 
-      <reference anchor="alpha-zero">
+      <reference anchor="alpha-zero"
+                 target="https://github.com/torvalds/linux/commits/master/net/ipv4/tcp_dctcp.c">
         <front>
           <title>tcp: allow dctcp alpha to drop to zero</title>
 
@@ -1282,7 +1281,7 @@
           <date day="23" month="October" year="2015"/>
         </front>
 
-        <seriesInfo name="Linux GitHub patch" value="Commit: c80dbe0"/>
+        <seriesInfo name="Linux GitHub patch;" value="Commit: c80dbe0"/>
 
         <format target="https://github.com/torvalds/linux/commit/c80dbe04612986fd6104b4a1be21681b113b5ac9"
                 type="HTML"/>
