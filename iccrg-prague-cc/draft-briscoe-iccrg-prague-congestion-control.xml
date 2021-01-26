@@ -418,22 +418,21 @@
 
           <t>To satsify this requirement, a Prague CC SHOULD wait until a
           certain fraction of the RTT has elapsed before it deems that the gap
-          is due to packet loss.</t>
+          is due to packet loss. The reference implementation of TCP Prague in
+          Linux uses RACK <xref target="I-D.ietf-tcpm-rack"/> to address this
+          requirement. An approach similar to TCP RACK is also used in
+          QUIC.</t>
 
-          <t>The reference implementation of TCP Prague in Linux uses RACK
-          [xref-RACK] to satisfy this requirement, although at the start of a
-          connection RACK counts 3 DupACKs to detect loss because the early
-          smoothed RTT can be inaccurate. The start-up behaviour of the
-          reference implementation is not yet set in stone (see <xref
-          target="pracc_flow_start"/>), so its loss detection behaviour during
-          start-up is yet to be specified.</t>
-
-          <t>A Prague CC MAY detect loss by counting a number of duplicate
-          ACKs as long as the number is derived in some way from time, rather
-          than hard-coded. For instance, if the initial window of 10 segments
-          was paced evenly across the initial RTT then, in the next round, an
-          implementation that deems there has been a loss after (say) 1/4 of
-          an RTT can count 1/4 of 10 = 3 DupACKs (rounded up).</t>
+          <t>At the start of a connection, RACK counts 3 DupACKs to detect
+          loss because the initial smoothed RTT estimate can be inaccurate.
+          This would depend indirectly on time as long as the initial window
+          (IW) is paced over a round trip (see <xref
+          target="pracc_flow_start"/>). For instance, if the initial window of
+          10 segments was paced evenly across the initial RTT then, in the
+          next round, an implementation that deems there has been a loss after
+          (say) 1/4 of an RTT can count 1/4 of 10 = 3 DupACKs (rounded up).
+          Subsequently, as the window grows, RACK shifts to using a fraction
+          of the RTT for loss detection.</t>
         </section>
       </section>
 
@@ -606,7 +605,8 @@
       </section>
 
       <section anchor="pracc_flow_start" title="Flow Start or Restart">
-        <t>{ToDo: Probably ought to be moved to S.5}</t>
+        <t>{ToDo: Probably ought to be moved to S.5} Pace IW; Paced Chirping?
+        Hystart++?</t>
       </section>
     </section>
 
@@ -796,6 +796,8 @@
       <?rfc include='reference.I-D.briscoe-docsis-q-protection'?>
 
       <?rfc include='reference.I-D.ietf-avtcore-cc-feedback-message'?>
+
+      <?rfc include='reference.I-D.ietf-tcpm-rack'?>
 
       <?rfc include='reference.I-D.ietf-tcpm-accurate-ecn'?>
 
