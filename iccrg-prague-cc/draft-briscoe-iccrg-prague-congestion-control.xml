@@ -407,18 +407,20 @@
         </section>
 
         <section title="Scaling Loss Detection with Flow Rate">
-          <t>This section addresses the 'time-based units' aspect of Req 4.3.
-          [xref-ecn-l4s-id].</t>
+          <t>After an ACK leaves a gap in the sequence space, a Prague CC is
+          meant to deem that a loss has occurred using 'time-based units' (Req
+          4.3. <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>). This is in
+          contrast to the traditional approach that counts a hard-coded number
+          of duplicate ACKs, e.g. the 3 Dup-ACKs specified in <xref
+          target="RFC5681"/>. Counting packets rather than time unnecessarily
+          tightens the time within which parallelized links have to keep
+          packets in sequence as flow rate scales over the years. </t>
 
-          <t>After an ACK leaves a gap in the sequence space, a Prague CC MUST
-          NOT deem that a loss has occurred by counting a hard-coded number of
-          duplicate ACKs, e.g. the 3 Dup-ACKs specified in [xref-RFC5681].
-          This practice unnecessarily tightens reordering intolerance as flow
-          rate scales over the years. Instead, a Prague CC SHOULD wait until a
+          <t>To satsify this requirement, a Prague CC SHOULD wait until a
           certain fraction of the RTT has elapsed before it deems that the gap
           is due to packet loss.</t>
 
-          <t>The reference implementation TCP Prague in Linux uses RACK
+          <t>The reference implementation of TCP Prague in Linux uses RACK
           [xref-RACK] to satisfy this requirement, although at the start of a
           connection RACK counts 3 DupACKs to detect loss because the early
           smoothed RTT can be inaccurate. The start-up behaviour of the
