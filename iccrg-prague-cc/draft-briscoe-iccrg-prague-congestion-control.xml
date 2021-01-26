@@ -380,13 +380,13 @@
               integer (with resolution 1/1024). However, up to kernel release
               3.19, Linux used integer arithmetic that could not reduce alpha
               below 15/1024. Then it was patched so that any value below
-              16/1024 was rounded down to zero. For a flow with a higher BDP
-              than 128 segments, this means that, alpha flip-flops. Once it
-              has flopped down to zero DCTCP becomes unresponsive until it has
-              built sufficient queue to flip up to 16/1024. For larger BDPs,
-              this causes DCTCP to induce larger sawteeth, which loses the
-              low-queuing-delay and high-utilization intent of the
-              algorithm.</t>
+              16/1024 was rounded down to zero <xref target="alpha-zero"/>.
+              For a flow with a higher BDP than 128 segments, this means that,
+              alpha flip-flops. Once it has flopped down to zero DCTCP becomes
+              unresponsive until it has built sufficient queue to flip up to
+              16/1024. For larger BDPs, this causes DCTCP to induce larger
+              sawteeth, which loses the low-queuing-delay and high-utilization
+              intent of the algorithm.</t>
 
               <t hangText="Upscaled alpha in Prague CC:">To resolve the above
               problem the implementation of TCP Prague in Linux maintains
@@ -1268,6 +1268,24 @@
         <seriesInfo name="Technical Report" value="TR-BB-2020-002"/>
 
         <format target="https://arxiv.org/pdf/2101.07727" type="PDF"/>
+      </reference>
+
+      <reference anchor="alpha-zero">
+        <front>
+          <title>tcp: allow dctcp alpha to drop to zero</title>
+
+          <author fullname="Andrew G. Shewmaker" initials="A. G. "
+                  surname="Shewmaker">
+            <organization/>
+          </author>
+
+          <date day="23" month="October" year="2015"/>
+        </front>
+
+        <seriesInfo name="Linux GitHub patch" value="Commit: c80dbe0"/>
+
+        <format target="https://github.com/torvalds/linux/commit/c80dbe04612986fd6104b4a1be21681b113b5ac9"
+                type="HTML"/>
       </reference>
     </references>
 
