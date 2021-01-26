@@ -380,13 +380,14 @@
               integer (with resolution 1/1024). However, up to kernel release
               3.19, Linux used integer arithmetic that could not reduce alpha
               below 15/1024. Then it was patched so that any value below
-              16/1024 was rounded down to zero <xref target="alpha-zero"/>.
-              For a flow with a higher BDP than 128 segments, this means that,
-              alpha flip-flops. Once it has flopped down to zero DCTCP becomes
-              unresponsive until it has built sufficient queue to flip up to
-              16/1024. For larger BDPs, this causes DCTCP to induce larger
-              sawteeth, which loses the low-queuing-delay and high-utilization
-              intent of the algorithm.</t>
+              16/1024 was rounded down to zero <xref
+              target="patch-alpha-zero"/>. For a flow with a higher BDP than
+              128 segments, this means that, alpha flip-flops. Once it has
+              flopped down to zero DCTCP becomes unresponsive until it has
+              built sufficient queue to flip up to 16/1024. For larger BDPs,
+              this causes DCTCP to induce larger sawteeth, which loses the
+              low-queuing-delay and high-utilization intent of the
+              algorithm.</t>
 
               <t hangText="Upscaled alpha in Prague CC:">To resolve the above
               problem the implementation of TCP Prague in Linux maintains
@@ -442,25 +443,27 @@
         the following differences:</t>
 
         <section title="Fall-Back on Loss">
-          <t>This section addresses the 'Fall-Back on Loss' aspect of Req 4.3.
-          [xref-ecn-l4s-id].</t>
-
-          <t>A Prague CC MUST fall back to Reno-friendly behaviour on
-          detection of a loss.</t>
+          <t>A Prague CC has to fall back to Reno-friendly behaviour on
+          detection of a loss (Req 4.3. <xref
+          target="I-D.ietf-tsvwg-ecn-l4s-id"/>). DCTCP falls back to Reno for
+          the round trip after a loss, and the reference implementation of TCP
+          Prague inherits this behaviour.</t>
 
           <t>If a Prague CC has already reduced cwnd due to ECN feedback less
           than a round trip before it detects a loss, it MAY reduce cwnd by a
           smaller amount due to the loss, as long as the reductions due to ECN
-          and the loss are Reno-friendly when taken together. See <xref
-          target="pracc_delay-based"/> for discussion of congestion control
-          using a combination of delay, ECN and loss.</t>
+          and the loss are Reno-friendly when taken together.</t>
+
+          <t>See <xref target="pracc_delay-based"/> for discussion of future
+          work on congestion control using a combination of delay, ECN and
+          loss.</t>
 
           <t><list style="hanging">
               <t hangText="Implementation note:">A Prague CC cannot rely on
               the fall-back-on-loss behaviour of the DCTCP code in the Linux
-              kernel prior to v5.1, due to a bug in the fast retransmit code
-              (but not in the retransmission timeout code)
-              [xref-dctcp-loss-patch].</t>
+              kernel prior to v5.1, due to a previous bug in the fast
+              retransmit code (but not in the retransmission timeout code)
+              <xref target="patch-loss-react"/>.</t>
             </list></t>
         </section>
 
@@ -640,8 +643,9 @@
       </section>
 
       <section anchor="pracc_delay-based"
-               title="Combination with Delay-Based Control">
-        <t>{ToDo: Integration between Prague CC and BBRv2}</t>
+               title="Combination of ECN-, Loss- and Delay-Based Control">
+        <t>{ToDo: Give algo for cobination of Loss and ECN. Integration
+        between Prague CC and BBRv2. }</t>
       </section>
 
       <section title="Fall-Back on Classic ECN">
@@ -1268,7 +1272,7 @@
         <format target="https://arxiv.org/pdf/2101.07727" type="PDF"/>
       </reference>
 
-      <reference anchor="alpha-zero"
+      <reference anchor="patch-alpha-zero"
                  target="https://github.com/torvalds/linux/commits/master/net/ipv4/tcp_dctcp.c">
         <front>
           <title>tcp: allow dctcp alpha to drop to zero</title>
@@ -1284,6 +1288,25 @@
         <seriesInfo name="Linux GitHub patch;" value="Commit: c80dbe0"/>
 
         <format target="https://github.com/torvalds/linux/commit/c80dbe04612986fd6104b4a1be21681b113b5ac9"
+                type="HTML"/>
+      </reference>
+
+      <reference anchor="patch-loss-react"
+                 target="https://github.com/torvalds/linux/commits/master/net/ipv4/tcp_dctcp.c">
+        <front>
+          <title>tcp: Ensure DCTCP reacts to losses</title>
+
+          <author fullname="Koen De Schepper" initials="K. "
+                  surname="De Schepper">
+            <organization/>
+          </author>
+
+          <date day="4" month="April" year="2019"/>
+        </front>
+
+        <seriesInfo name="Linux GitHub patch;" value="Commit: aecfde2"/>
+
+        <format target="https://github.com/torvalds/linux/commit/aecfde23108b8e637d9f5c5e523b24fb97035dc3"
                 type="HTML"/>
       </reference>
     </references>
