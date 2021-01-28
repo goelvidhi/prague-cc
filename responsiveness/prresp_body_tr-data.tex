@@ -152,6 +152,8 @@ nothing until the next round trip cycle.
 	\caption{Initial verification of per-ACK EWMA algorithm (with constant \texttt{cwnd}).}\label{fig:per-ack-ewma-verify}
 \end{figure}
 
+\bob{Add discussion of initialization of the EWMA. To mimic DCTCP and Prague, on the first CE marked feedback, (av\_up = cwnd * g). However, it will be interesting to see whether we can improve on this in a further set of experiments; for instance using (av\_up = flight * g) instead}
+
 \subsubsection{Responding to Congestion}\label{prresp_congestion_response}
 
 The approach proposed in this section is not necessarily the final word on how
