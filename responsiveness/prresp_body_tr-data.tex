@@ -398,13 +398,37 @@ Initial experiments will need to compare how quickly a DCTCP flow in congestion
 avoidance can reduce in response to a newly arriving flow or a reduction in
 capacity.
 
+The Prague reference implementation should be used as the baseline, given it is
+probably the best possible implementation of a per-RTT EWMA.%
+%
+\footnote{'Bugs' in the implementation of the EWMA in DCTCP have been fixed in
+	TCP Prague, which raises the question of which variant of the EWMA code should
+	be used as the baseline to compare with. Prior to a 2015
+	patch~\cite{shewmaker15:Linux_DCTCP_EWMA}, the integer arithmetic for the EWMA
+	in Linux floored at 15/1024, which ensured a minimum window reduction even after
+	an extended period without congestion marking. That patch toggled the EWMA to
+	zero whenever it tried to reduce \texttt{alpha} below that floor, and remained
+	unresponsive until congestion was sufficient to toggle \texttt{alpha} back up to
+	16/1024. The TCP Prague reference implementation maintains the EWMA in an
+	upscaled variant of \texttt{alpha}, as well as using higher precision and
+	removing rounding bias.}%
+%
+But it might also be interesting to compare this with the pre-2019
+implementation of DCTCP that might have accidentally been more responsive in
+many scenarios. This would be possible Without winding all the code back to that
+date by simply setting a floor for \texttt{alpha} at 15/1024 in the Prague code.
+
+Pacing should be enabled in both A and B tests. But, initially, segmentation
+offload should be disabled, to simplify interpretation of the results, before
+enabling offload in both A and B tests together.
+
 Initially the same gain as DCTCP (1/16) ought to be used. But it is possible
 that the reason DCTCP's gain had to be so low was because of the two rounds of
 built in lag in the algorithm. Therefore, it will be interesting to see if the
 gain can be increased (from 1/16 to 1/8 or perhaps even 1/2 ought to be tried).
 
 The thinking here is that a fixed amount of lag in a response is not the same as
-smoothing. Lag applies the same response by later. Smoothing spreads the
+smoothing. Lag applies the same response but later. Smoothing spreads the
 response out, adding lag to the end of the response, but not to the start. Given
 every DCTCP flow's response to each change has been lagged by 2 rounds, it is
 possible that all flows have had to be smoothed more than necessary, in order to
