@@ -161,9 +161,9 @@ used to carry forward the remainder to the invocation on the next ACK. The
 quotient will typically be either 0 or 1, which is then used to decrement the
 EWMA.
 
-In practice, values would need to be checked for underflow and/or overflow, but
-such details are omitted from the pseudocode in this paper.
-
+In practice, values would need to be checked for underflow and/or overflow (for
+instance, \texttt{av\_up} has to be prevented from going negative in the last
+line), but such details are omitted from the pseudocode in this paper.
 
 \autoref{fig:per-ack-ewma-verify} compares toy simulations of the above EWMA and
 the DCTCP EWMA (without changing cwnd). It can be seen that, whenever marks
@@ -368,6 +368,8 @@ opposite end of the number space of the denominator and back again. Whichever
 direction cwnd last moved in, this ensures that the remainder always lies in the
 range [0,\texttt{\_denom}-1]. This is preferable to handling a negative carry,
 which would halve the number space available for the scaled up variables.
+\bob{This doesn't work when flight has changed since cwnd\_carry.rem was last 
+	calculated. Will have to re-think.}
 
 \section{(Non-)Concerns}\label{prresp_Non-Concerns}
 
