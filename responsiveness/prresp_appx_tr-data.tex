@@ -29,10 +29,10 @@ Specifically, that \((1 - 1/nG)^n \approx 1 - 1/G\).
              &\approx 1 - \frac{1}{G}
 \end{align*}
 
-To quantify the error, we define the effective gain
-(\(1/G^\prime\)) as the per-RTT gain that would give an equivalent reduction to
-multiple smaller per-ACK reductions using the original gain (\(1/G\)).
-Numerically, we find that \(G^\prime \approx G + 1/2\) (see \autoref{fig:per-ack-approx}).
+To quantify the error, we define the effective gain (\(1/G^\prime\)) as the
+per-RTT gain that would give an equivalent reduction to multiple smaller per-ACK
+reductions using the original gain (\(1/G\)). Numerically, we find that
+\(G^\prime \approx G + 1/2\) (see \autoref{fig:per-ack-approx}).
 
 \begin{figure}[h]
 	\includegraphics[width=\linewidth]{per-ack-approx}
@@ -55,6 +55,7 @@ G^\prime - G &\approx \frac{G}{(2G-1)}
 \end{align*}
 Other than for low values of \(G\) this difference is indeed roughly \(1/2\). 
 
-The worst-case error occurs when \(G\) is small and \(W\) is large. Multiple reductions using any high value of \(W\) and the lowest practical value of \(G (=2)\)
-would be equivalent to a single reduction using \(G^\prime\approx2.54\) (i.e.\
-the error in this worst-case is about 0.54).
+The worst-case error occurs when \(G\) is small and \(W\) is large. Multiple
+reductions using any high value of \(W\) and the lowest practical value of \(G
+(=2)\) would be equivalent to a single reduction using \(G^\prime\approx2.54\)
+(i.e.\ the error in this worst-case is about 0.54).

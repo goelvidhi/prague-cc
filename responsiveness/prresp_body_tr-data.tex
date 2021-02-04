@@ -14,35 +14,45 @@
 	\label{fig:dctcp-feedback-lag}
 \end{figure*}
 
-This report shows that common implementations of DCTCP~\cite{Alizadeh10:DCTCP} (e.g.\ in Windows,
-Linux, or FreeBSD~\cite{Bensley17:DCTCP}) take up to two rounds before a change in
-congestion on the path fully feeds into the moving average that regulates its
-response. This is on top of the inherent round trip of delay in the feedback loop. 
+This report shows that common implementations of DCTCP~\cite{Alizadeh10:DCTCP}
+(e.g.\ in Windows, Linux, or FreeBSD~\cite{Bensley17:DCTCP}) take up to two
+rounds before a change in congestion on the path fully feeds into the moving
+average that regulates its response. This is on top of the inherent round trip
+of delay in the feedback loop.
 
-A moving average intentionally dampens responsiveness so that there will only be a full response to a change if it sustains over the whole averaging period. However, the extra rounds we focus on here represent pure lag before that damping can even start. 
+A moving average intentionally dampens responsiveness so that there will only be
+a full response to a change if it sustains over the whole averaging period.
+However, the extra rounds we focus on here represent pure lag before that
+damping can even start.
 
-This means that established DCTCP flows take 2 or 3 rounds (rather than 1) before they even start to respond to a reduction in available capacity or yield to a new flow. In turn, this means that a new flow must either build up a large queue before any established flow yields, or it must enter the system very tentatively. Therefore, the algorithm in this report is at least part of a solution to the 'Prague Requirement' for 'faster convergence at flow start'~\cite[Appx A.2.3]{Briscoe15f:ecn-l4s-id_ID}.
+This means that established DCTCP flows take 2 or 3 rounds (rather than 1)
+before they even start to respond to a reduction in available capacity or yield
+to a new flow. In turn, this means that a new flow must either build up a large
+queue before any established flow yields, or it must enter the system very
+tentatively. Therefore, the algorithm in this report is at least part of a
+solution to the 'Prague Requirement' for 'faster convergence at flow
+start'~\cite[Appx A.2.3]{Briscoe15f:ecn-l4s-id_ID}.
 
-Both extra rounds are due to DCTCP's two-stage process for responding to congestion (see \autoref{fig:dctcp-feedback-lag}). The
-first stage introduces one round of delay (RTT\(_i\)) while it accumulates the
-marking fraction before it can calculate the EWMA (\(\alpha_i\)). It
-passes this to the second stage that reduces the congestion window
-(\(W\)) by \(\alpha_i W_i\). The second extra round arises because the
-second stage is triggered by congestion feedback (a red
-ACK) that occurs independently of the regularly clocked first stage. 
+Both extra rounds are due to DCTCP's two-stage process for responding to
+congestion (see \autoref{fig:dctcp-feedback-lag}). The first stage introduces
+one round of delay (RTT\(_i\)) while it accumulates the marking fraction before
+it can calculate the EWMA (\(\alpha_i\)). It passes this to the second stage
+that reduces the congestion window (\(W\)) by \(\alpha_i W_i\). The second extra
+round arises because the second stage is triggered by congestion feedback (a red
+ACK) that occurs independently of the regularly clocked first stage.
 
 So it takes two rounds before a full round of the congestion that triggered the
 start of the second stage has fed through into the EWMA that the first stage
-passes to the second. This is exacerbated by entering congestion window
-reduced (CWR) state at the first sign of congestion,
-which suppresses any further response for a round, just when more congestion
-feedback is likely. Also, the lagged congestion response will tend to overrun into
-the subsequent round, causing undershoot.
+passes to the second. This is exacerbated by entering congestion window reduced
+(CWR) state at the first sign of congestion, which suppresses any further
+response for a round, just when more congestion feedback is likely. Also, the
+lagged congestion response will tend to overrun into the subsequent round,
+causing undershoot.
 
 The problem seems to boil down to how to update the EWMA of marking on a per-ACK
-basis. But, more specifically, the problem is how to keep the time
-constant over which this per-ACK EWMA smooths itself to a set number of
-rounds, even though the number of packets per round varies.
+basis. But, more specifically, the problem is how to keep the time constant over
+which this per-ACK EWMA smooths itself to a set number of rounds, even though
+the number of packets per round varies.
 
 \section{Per-ACK EWMA}\label{prresp_Per-Packet_EWMA}
 
@@ -134,14 +144,21 @@ On_each_ACK'd_packet {
 }
 \end{verbatim}
 
-The pseudocode uses an integer division function \texttt{div()} with the same interface as \texttt{div()} in C's standard library.\footnote{\texttt{div()} can be thought of as a wrapper round \texttt{do\_div()}, which is intended for kernel use, but less readable for pseudocode.} Specifically, it returns both the quotient and the remainder in the following structure:
+The pseudocode uses an integer division function \texttt{div()} with the same
+interface as \texttt{div()} in C's standard library.\footnote{\texttt{div()} can
+be thought of as a wrapper round \texttt{do\_div()}, which is intended for
+kernel use, but less readable for pseudocode.} Specifically, it returns both the
+quotient and the remainder in the following structure:
 \begin{verbatim}
 typedef struct {
   int quot;
   int rem;
 } div_t;
 \end{verbatim}
-The variable \texttt{av\_carry} would be declared of type \texttt{div\_t}. It is used to carry forward the remainder to the invocation on the next ACK. The quotient will typically be either 0 or 1, which is then used to decrement the EWMA.
+The variable \texttt{av\_carry} would be declared of type \texttt{div\_t}. It is
+used to carry forward the remainder to the invocation on the next ACK. The
+quotient will typically be either 0 or 1, which is then used to decrement the
+EWMA.
 
 \autoref{fig:per-ack-ewma-verify} compares toy simulations of the above EWMA and
 the DCTCP EWMA (without changing cwnd). It can be seen that, whenever marks
@@ -152,7 +169,10 @@ nothing until the next round trip cycle.
 	\caption{Initial verification of per-ACK EWMA algorithm (with constant \texttt{cwnd}).}\label{fig:per-ack-ewma-verify}
 \end{figure}
 
-\bob{Add discussion of initialization of the EWMA. To mimic DCTCP and Prague, on the first CE marked feedback, (av\_up = cwnd * G). However, it will be interesting to see whether we can improve on this in a further set of experiments; for instance using (av\_up = flight * G) instead}
+\bob{Add discussion of initialization of the EWMA. To mimic DCTCP and Prague, on
+	the first CE marked feedback, (av\_up = cwnd * G). However, it will be
+	interesting to see whether we can improve on this in a further set of
+	experiments; for instance using (av\_up = flight * G) instead}
 
 \subsubsection{Responding to Congestion}\label{prresp_congestion_response}
 
@@ -337,9 +357,12 @@ variable as the multiplicative decrease. So both numerator and denominator are
 scaled up such that AI uses the same denominator parameter as MD, otherwise the
 upscaling of the carry variable would be different.
 
-Naively, the remainder could be added for AI and subtracted for MD. Instead, it is always added, but before and after the MD, it is respectively flipped to the opposite end of the number space of the denominator and back again. Whichever direction cwnd last moved in, this ensures that the remainder always lies in the range [0,\texttt{\_denom}-1].
-This is preferable to handling a negative carry, which would halve the number
-space available for the scaled up variables.
+Naively, the remainder could be added for AI and subtracted for MD. Instead, it
+is always added, but before and after the MD, it is respectively flipped to the
+opposite end of the number space of the denominator and back again. Whichever
+direction cwnd last moved in, this ensures that the remainder always lies in the
+range [0,\texttt{\_denom}-1]. This is preferable to handling a negative carry,
+which would halve the number space available for the scaled up variables.
 
 \section{(Non-)Concerns}\label{prresp_Non-Concerns}
 
