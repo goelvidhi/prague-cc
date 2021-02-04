@@ -62,6 +62,7 @@ factor, it is proposed to upscale it by \texttt{flight\_ / gain}, where
 (\texttt{gain < 1}). Then, as shown below, the EWMA can be maintained by a
 single continuous set of repetitive increments or decrements determined on each
 ACK.
+\bob{Double-check that the use of \texttt{flight\_} is rigorous.}
 
 Although it updates every ACK, we show that scaling up the EWMA by
 \texttt{flight\_} \emph{implicitly} smooths the EWMA over a characteristic
