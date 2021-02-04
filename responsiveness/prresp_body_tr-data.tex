@@ -117,13 +117,13 @@ per-packet update of the upscaled EWMA, \texttt{av\_up}:
 \subsubsection{Maintaining the EWMA}
 
 The \texttt{ce\_fb} term can be implemented by adding 1 to \texttt{av\_up} on
-feedback of each CE-marked packet. Given \texttt{av\_up} is upscaled by
-\texttt{g}, this is equivalent to adding \texttt{1/g} of a mark.
+feedback of each CE-marked packet. If \texttt{av\_up} was not upscaled by
+\texttt{g}, this would equivalent to adding \texttt{1/g} of a mark.
 
 The number of packets acknowledged in the current round is \texttt{flight}. So
 repeatedly subtracting \texttt{av\_up/(flight\_*g)} on the arrival of every ACK
-would reduce \texttt{av\_up} by \texttt{av\_up*flight/(flight\_*g)} in a round
-(see \autoref{prresp_approx}). This approximates to \texttt{av\_up/g} per round.
+would reduce \texttt{av\_up} by \texttt{av\_up*flight/(flight\_*g)} in a round. This approximates to \texttt{av\_up/g} per round
+(see \autoref{prresp_approx}).
 
 \begin{verbatim}
 On_each_ACK'd_packet {
@@ -134,7 +134,7 @@ On_each_ACK'd_packet {
 }
 \end{verbatim}
 
-The algorithm uses the integer division library function \texttt{div()}, which returns both the quotient and the remainder in a structure of type \texttt{div\_t} as follows:
+The pseudocode uses an integer division function \texttt{div()} with the same interface as \texttt{div()} in C's standard library.\footnote{\texttt{div()} can be thought of as a wrapper round \texttt{do\_div()}, which is intended for kernel use, but less readable for pseudocode.} Specifically, it returns both the quotient and the remainder in the following structure:
 \begin{verbatim}
 typedef struct {
   int quot;
