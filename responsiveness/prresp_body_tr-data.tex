@@ -78,11 +78,11 @@ response can pick up this growth as it proceeds.
 
 \paragraph{Definitions of variables}
 \begin{description}[nosep]
-	\item [\texttt{g}] = \texttt{1/gain}. By default in DCTCP \texttt{g = 16};
-%	\item [\texttt{g\_shift}] = \texttt{lg(g)};
-	\item [\texttt{av\_up}]: EWMA of the marks per round upscaled by \texttt{g};
+	\item [\texttt{G}] = \texttt{1/gain} (\(>1\)). By default in DCTCP \texttt{G = 16};
+%	\item [\texttt{G\_shift}] = \texttt{lg(G)};
+	\item [\texttt{av\_up}]: EWMA of the marks per round upscaled by \texttt{G};
 	Alternatively, it might help to think of this as the EWMA of the marking
-	probability (alpha in DCTCP) upscaled by \texttt{g * flight\_}. 
+	probability (alpha in DCTCP) upscaled by \texttt{G * flight\_}. 
 	\item [\texttt{flight\_}]: the number of packets in flight when the marking
 	probablity was fed into the EWMA (used for explanation, but not in the code);
 	\item [\texttt{flight}]: the number of packets in flight now;
@@ -94,7 +94,7 @@ response can pick up this growth as it proceeds.
 In DCTCP, the EWMA, \texttt{alpha}, is maintained per round trip as follows (in
 floating point arithmetic):
 \begin{verbatim}
-    alpha += (F - alpha)/g,
+    alpha += (F - alpha)/G,
 \end{verbatim}
 where F is the fraction of marked bytes accumulated over the last round trip.
 
@@ -103,13 +103,13 @@ the EWMA on the feedback of every packet, but scaling down each update by the
 number of packets in that round, \texttt{flight\_}. That is, the following
 per-packet update:
 \begin{verbatim}
-    alpha += (ce_fb - alpha) / (flight_*g).
+    alpha += (ce_fb - alpha) / (flight_*G).
 \end{verbatim}
 
 The above per-packet update of the EWMA is roughly equivalent to the following
 per-packet update of the upscaled EWMA, \texttt{av\_up}:
 \begin{verbatim}
-    av_up += ce_fb - av_up/(flight_*g).
+    av_up += ce_fb - av_up/(flight_*G).
 \end{verbatim}
 
 \subsection{Implementation}\label{prresp_implementation}
@@ -118,18 +118,18 @@ per-packet update of the upscaled EWMA, \texttt{av\_up}:
 
 The \texttt{ce\_fb} term can be implemented by adding 1 to \texttt{av\_up} on
 feedback of each CE-marked packet. If \texttt{av\_up} was not upscaled by
-\texttt{g}, this would equivalent to adding \texttt{1/g} of a mark.
+\texttt{G}, this would equivalent to adding \texttt{1/G} of a mark.
 
 The number of packets acknowledged in the current round is \texttt{flight}. So
-repeatedly subtracting \texttt{av\_up/(flight\_*g)} on the arrival of every ACK
-would reduce \texttt{av\_up} by \texttt{av\_up*flight/(flight\_*g)} in a round. This approximates to \texttt{av\_up/g} per round
-(see \autoref{prresp_approx}).
+repeatedly subtracting \texttt{av\_up/(flight\_*G)} on the arrival of every ACK
+would reduce \texttt{av\_up} by \texttt{av\_up*flight/(flight\_*G)} in a round
+(see \autoref{prresp_approx}). This approximates to \texttt{av\_up/G} per round.
 
 \begin{verbatim}
 On_each_ACK'd_packet {
   // Update EWMA
   av_carry = 
-    div(av_carry.rem+av_up, flight*g);
+    div(av_carry.rem+av_up, flight*G);
   av_up += ce_fb - av_carry.quot;
 }
 \end{verbatim}
@@ -152,7 +152,7 @@ nothing until the next round trip cycle.
 	\caption{Initial verification of per-ACK EWMA algorithm (with constant \texttt{cwnd}).}\label{fig:per-ack-ewma-verify}
 \end{figure}
 
-\bob{Add discussion of initialization of the EWMA. To mimic DCTCP and Prague, on the first CE marked feedback, (av\_up = cwnd * g). However, it will be interesting to see whether we can improve on this in a further set of experiments; for instance using (av\_up = flight * g) instead}
+\bob{Add discussion of initialization of the EWMA. To mimic DCTCP and Prague, on the first CE marked feedback, (av\_up = cwnd * G). However, it will be interesting to see whether we can improve on this in a further set of experiments; for instance using (av\_up = flight * G) instead}
 
 \subsubsection{Responding to Congestion}\label{prresp_congestion_response}
 
@@ -164,7 +164,7 @@ too far from its intent.
 
 DCTCP reduces \texttt{cwnd} by \texttt{alpha*cwnd/2} in any round trip in which
 CE feedback is present. The proposed approach reduces \texttt{cwnd} by half the
-average number of marked packets per round, or \texttt{av\_up / (2*g)}. This is
+average number of marked packets per round, or \texttt{av\_up / (2*G)}. This is
 broadly equivalent to DCTCP in that it maintains the scalable '\(1/p\)' response
 function, except the following two slight differences could potentially alter
 the steady-state outcome:
@@ -206,7 +206,7 @@ algorithm first calculates that at least one packet of movement is possible.
 On_each_ACK'd_packet {
   // Update EWMA
   av_carry = 
-    div(av_carry.rem+av_up, flight*g);
+    div(av_carry.rem+av_up, flight*G);
   av_up += ce_fb - av_carry.quot;
 
   if (!cwr && ce_fb) {
@@ -219,7 +219,7 @@ On_each_ACK'd_packet {
     if (snd_una < next_seq) {
       // Multiplicative Decrease
       cwnd_carry = div(cwnd_carry.rem 
-                   + av_up, flight*g*2);
+                   + av_up, flight*G*2);
       cwnd -= cwnd_carry.quot;
     } else {
       cwr = false;
@@ -257,8 +257,8 @@ sizes, but the Linux implementation of DCTCP works well enough without attending
 to this degree of detail.
 
 Also, for clarity, various integer arithmetic tricks are omitted from the
-pseudocode, such as choosing a value of \texttt{g} that is a power of 2, so that
-multiplication by \texttt{g} can be implemented with a bit-shift.
+pseudocode, such as choosing a value of \texttt{G} that is a power of 2, so that
+multiplication by \texttt{G} can be implemented with a bit-shift.
 
 The pseudocode does, nonetheless, inherently attend to details such as loss of
 precision due to integer truncation. And note that \texttt{cwnd} is not updated
@@ -277,13 +277,13 @@ operating point (if it is not, see \S\,\ref{prresp_future}).
 On_each_ACK'd_packet {
   // Update EWMA
   av_carry = 
-    div(av_carry.rem+av_up, flight*g);
+    div(av_carry.rem+av_up, flight*G);
   av_up += ce_fb - av_carry.quot;
 
   if (!ce_fb) {
     // Additive Increase
     cwnd_carry = 
-      div(cwnd_carry.rem+g*2, flight*g*2);
+      div(cwnd_carry.rem+G*2, flight*G*2);
     cwnd += cwnd_carry.quot;
   } else if (!cwr) {
     // Record start of CWR state
@@ -295,7 +295,7 @@ On_each_ACK'd_packet {
     // Check still in CWR round
     if (snd_una < next_seq) {
       // Multiplicative Decrease
-      _denom = flight*g*2;
+      _denom = flight*G*2;
       cwnd_carry.rem = 
         _denom - cwnd_carry.rem;
       cwnd_carry = 
@@ -353,7 +353,7 @@ In fact, \texttt{av\_up} is upscaled by \texttt{flight\_} (note the trailing
 underscore), which is what \texttt{flight} \emph{was} at the time of each
 repetitive decrement or increment of \texttt{av\_up}. So \texttt{av\_up} depends
 on an implicit exponentially weighted moving average of \texttt{flight} with a
-characteristic smoothing timescale of \texttt{g} round trips. This removes any
+characteristic smoothing timescale of \texttt{G} round trips. This removes any
 circular dependency.
 
 \subsection{Advantage to Application Limited
@@ -390,7 +390,7 @@ For research purposes, we ought not to introduce two changes at once, without
 evaluating each separately. Therefore, initially, we ought to use the
 continually updated EWMA, \texttt{av\_up} to reduce \texttt{cwnd} in the
 classical way. That is, on the first feedback of a CE mark, reduce \texttt{cwnd}
-once by \texttt{av\_up/(2*g)}. Then suppress further response for a round (CWR
+once by \texttt{av\_up/(2*G)}. Then suppress further response for a round (CWR
 state). This should remove one round of lag (originally spent accumulating the
 marking fraction), but not the rest (spent reducing cwnd in response to a single
 mark, then doing nothing for a round while the extent of marking is becoming
@@ -457,7 +457,7 @@ expose poor approximations in the algorithm (relative to DCTCP):
 \section{Related Work}\label{prresp_related}
 \balance
 Reducing \texttt{cwnd} in one RTT by half of the marks per round trip
-(\texttt{av\_up/2/g}) is similar but not the same as Relentless
+(\texttt{av\_up/2/G}) is similar but not the same as Relentless
 TCP~\cite{Mathis09:Relentless}, which reduces \texttt{cwnd} by half a segment on
 feedback of each CE-marked packet. The difference is that \texttt{av\_up} is a
 moving average, so it does not depend on the number of marks in any specific
