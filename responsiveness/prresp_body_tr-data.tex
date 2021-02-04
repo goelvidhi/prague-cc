@@ -147,7 +147,8 @@ On_each_ACK'd_packet {
 The pseudocode uses an integer division function \texttt{div()} with the same
 interface as \texttt{div()} in C's standard library.\footnote{\texttt{div()} can
 be thought of as a wrapper round \texttt{do\_div()}, which is intended for
-kernel use, but less readable for pseudocode.} Specifically, it returns both the
+kernel use, but less readable for pseudocode.} Specifically, it takes numerator
+and denominator as parameters and returns both the
 quotient and the remainder in the following structure:
 \begin{verbatim}
 typedef struct {
@@ -159,6 +160,10 @@ The variable \texttt{av\_carry} would be declared of type \texttt{div\_t}. It is
 used to carry forward the remainder to the invocation on the next ACK. The
 quotient will typically be either 0 or 1, which is then used to decrement the
 EWMA.
+
+In practice, values would need to be checked for underflow and/or overflow, but
+such details are omitted from the pseudocode in this paper.
+
 
 \autoref{fig:per-ack-ewma-verify} compares toy simulations of the above EWMA and
 the DCTCP EWMA (without changing cwnd). It can be seen that, whenever marks
