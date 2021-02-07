@@ -20,6 +20,12 @@ rounds before a change in congestion on the path fully feeds into the moving
 average that regulates its response. This is on top of the inherent round trip
 of delay in the feedback loop.
 
+This applies equally to congestion controls based on DCTCP, in particular TCP
+Prague that is intended for use over the wide area; unnecessary rounds of lag
+will be much more noticeable in absolute terms. Unless otherwise stated, the
+term DCTCP in this paper should be considered to include derivatives like
+Prague.
+
 A moving average intentionally dampens responsiveness so that there will only be
 a full response to a change if it sustains over the whole averaging period.
 However, the extra rounds we focus on here represent pure lag before that
@@ -196,14 +202,14 @@ function, except the following two slight differences could potentially alter
 the steady-state outcome:
 \begin{itemize}[nosep]
 	\item The window reduction is taken as a proportion of what the window has been
-	in recent rounds, not what it is now (as in DCTCP) (see
+	in recent rounds, not what it is now (as DCTCP does) (see
 	\S\,\ref{prresp_Non-Concerns}).
 	\item The window reduction is taken as a proportion of the amount of the window
 	that has been \emph{used} in recent rounds, not the maximum that the flow was
 	entitled to use, i.e.\ packets in flight not \texttt{cwnd}. Thus, if an
 	application-limited flow has only used a quarter of the available window in
 	recent rounds, the proposed reduction of \texttt{cwnd} will be only a quarter of
-	that applied by DCTCP (see \S\,\ref{prresp_Advantage_App-Limited}).
+	that applied previously by DCTCP (see \S\,\ref{prresp_Advantage_App-Limited}).
 \end{itemize}
 
 The main departure from DCTCP is in the speed of response. Rather than reduce 
@@ -254,8 +260,11 @@ On_each_ACK'd_packet {
 }
 \end{verbatim}
 
-As in DCTCP, the EWMA is calculated continuously, but it is only used if there
-is actual congestion marking, when it is applied for one round of CWR. %This is
+As in DCTCP, the EWMA continues to be calculated whether or not there is
+congestion feedback, and it is only used if there
+is actual congestion marking. However, unlike DCTCP, it continues to be applied
+per-ACK during the round of CWR rather than just once at the start of CWR. 
+%This is
 %also similar to the approach used to smooth queue measurement in many classical
 %AQMs (e.g.\ PIE, CoDel), where a control law continuously calculates a smoothed
 %likelihood of signalling (drops or marks), but the AQM only emits signals if
@@ -334,7 +343,7 @@ includes a Reno-like additive increase.
 This is intended for periods when the congestion control is close to its
 operating point (if it is not, see \S\,\ref{prresp_future}).
 
-Unlike DCTCP, the proposed AI algorithm is not suppressed during
+Unlike DCTCP (but like Prague), the proposed AI algorithm is not suppressed during
 CWR state, with the following reasoning. DCTCP-like congestion controls are
 designed to induce roughly 2 ECN marks per round trip in steady state, so RTTs
 without marks are not meant to happen. Confining increases to periods that are
@@ -349,7 +358,7 @@ calculated per-ACK as in most TCP implementations), is skipped if an ACK
 carries congestion feedback. This thins down the additive increase as congestion
 rises (see \S\,3.1 of \cite{Briscoe17a:CC_Tensions_TR}).
 
-Also unlike DCTCP, the increase in \texttt{cwnd} per round trip is divided
+Unlike DCTCP and unlike Prague, the increase in \texttt{cwnd} per round trip is divided
 over the actual number of packets in flight, not over the congestion window
 (which increases \texttt{cwnd} by 1 segment whether or not \texttt{cwnd} is
 fully used).
@@ -499,16 +508,10 @@ marking fraction), but not the rest (spent reducing cwnd in response to a single
 mark, then doing nothing for a round while the extent of marking is becoming
 apparent).
 
-Initial experiments will need to compare how quickly a DCTCP flow in congestion
-avoidance can reduce in response to a newly arriving flow or a reduction in
-capacity.
-
-The Prague reference implementation should be used as the baseline, given it is
-probably the best possible implementation of a per-RTT EWMA.%
+On the same principle of one change at a time, A-B testing ought to use TCP Prague not DCTCP as the base for comparisons, given Prague includes fixes to known problems with DCTCP's EWMA.%
 %
 \footnote{'Bugs' in the implementation of the EWMA in DCTCP have been fixed in
-	TCP Prague, which raises the question of which variant of the EWMA code should
-	be used as the baseline to compare with. Prior to a 2015
+	TCP Prague. Prior to a 2015
 	patch~\cite{shewmaker15:Linux_DCTCP_EWMA}, the integer arithmetic for the EWMA
 	in Linux floored at 15/1024, which ensured a minimum window reduction even after
 	an extended period without congestion marking. That patch toggled the EWMA to
@@ -520,22 +523,26 @@ probably the best possible implementation of a per-RTT EWMA.%
 %
 But it might also be interesting to compare this with the pre-2019
 implementation of DCTCP that might have accidentally been more responsive in
-many scenarios. This would be possible Without winding all the code back to that
+many scenarios. This would be possible without winding all the code back to that
 date by simply setting a floor for \texttt{alpha} at 15/1024 in the Prague code.
 
+The actual comparison should focus on how quickly a Prague flow in congestion
+avoidance can reduce in response to a newly arriving flow or a reduction in
+capacity.
+
 Pacing should be enabled in both A and B tests. But, initially, segmentation
-offload should be disabled, to simplify interpretation of the results, before
+offload should be disabled in both, to simplify interpretation of the results before
 enabling offload in both A and B tests together.
 
-Initially the same gain as DCTCP (1/16) ought to be used. But it is possible
-that the reason DCTCP's gain had to be so low was because of the two rounds of
+Initially the same gain as DCTCP and Prague (1/16) ought to be used. But it is possible
+that the reason DCTCP's gain had to be so low was because of the 1--2 rounds of
 built in lag in the algorithm. Therefore, it will be interesting to see if the
 gain can be increased (from 1/16 to 1/8 or perhaps even 1/2 ought to be tried).
 
 The thinking here is that a fixed amount of lag in a response is not the same as
 smoothing. Lag applies the same response but later. Smoothing spreads the
 response out, adding lag to the end of the response, but not to the start. Given
-every DCTCP flow's response to each change has been lagged by 2 rounds, it is
+every DCTCP flow's response to each change has been lagged by 1--2 rounds, it is
 possible that all flows have had to be smoothed more than necessary, in order to
 prevent the excessively lagged responses from causing over-reactions and
 oscillations.
@@ -547,7 +554,7 @@ should also help to address the incast problem, at least for transfers that last
 longer than one round. Therefore, incast experiments could also be of interest.
 
 It will also be necessary to check performance in the following cases that might
-expose poor approximations in the algorithm (relative to DCTCP):
+expose poor approximations in the algorithm (relative to Prague):
 \begin{enumerate}
 	\item When the packets in flight has been growing for some time;
 	\item \ldots{}or shrinking for some time;
