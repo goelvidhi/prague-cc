@@ -139,8 +139,8 @@ would reduce \texttt{av\_up} by \texttt{av\_up*flight/(flight\_*G)} in a round
 \begin{verbatim}
 On_each_ACK'd_packet {
   // Update EWMA
-  av_carry = 
-    div(av_carry.rem+av_up, flight*G);
+  av_carry = div(
+    av_carry.rem+av_up, flight*G);
   av_up += ce_fb - av_carry.quot;
 }
 \end{verbatim}
@@ -225,14 +225,14 @@ started.
 
 To spread the reduction over the round, the proposed algorithm below does not
 divide the round into an arbitrary number of points where \texttt{cwnd} is
-altered by varying amounts. Instead, it decrements \texttt{cwnd} as soon as the
-algorithm first calculates that at least one packet of movement is possible. 
+altered by varying amounts. Instead, it decrements \texttt{cwnd} on the first ACK
+when calculates that at least one packet of movement is possible. 
 
 \begin{verbatim}
 On_each_ACK'd_packet {
   // Update EWMA
-  av_carry = 
-    div(av_carry.rem+av_up, flight*G);
+  av_carry = div(
+    av_carry.rem+av_up, flight*G);
   av_up += ce_fb - av_carry.quot;
 
   if (!cwr && ce_fb) {
@@ -244,8 +244,8 @@ On_each_ACK'd_packet {
     // Check still in CWR round
     if (snd_una < next_seq) {
       // Multiplicative Decrease
-      cwnd_carry = div(cwnd_carry.rem 
-                   + av_up, flight*G*2);
+      cwnd_carry = div(
+        cwnd_carry.rem+av_up, flight*G*2);
       cwnd -= cwnd_carry.quot;
     } else {
       cwr = false;
@@ -279,8 +279,7 @@ slow-start threshold would track reductions in \texttt{cwnd} (but see
 \S\,\ref{prresp_future} for alternative ideas). Also, the code would have to
 handle acknowledgement of multiple packets at a time (potentially with different
 congestion markings). It might also handle ECN markings on packets of different
-sizes, but the Linux implementation of DCTCP works well enough without attending
-to this degree of detail.
+sizes.
 
 Also, for clarity, various integer arithmetic tricks are omitted from the
 pseudocode, such as choosing a value of \texttt{G} that is a power of 2, so that
@@ -293,11 +292,6 @@ starts CWR state.
 
 \subsubsection{The Whole AIMD Algorithm}\label{prresp_AIMD}
 
-For completeness, the pseudocode below %in \autoref{fig:prresp_per-ack-aimd} 
-includes a Reno-like additive increase.
-This is intended for periods when the congestion control is close to its
-operating point (if it is not, see \S\,\ref{prresp_future}).
-
 %\begin{figure}[t]
 \begin{verbatim}
 On_each_ACK'd_packet {
@@ -308,8 +302,9 @@ On_each_ACK'd_packet {
 
   if (!ce_fb) {
     // Additive Increase
-    cwnd_carry = div2(cwnd_carry.rem[0]
-                 +G*2, flight*G*2, 0);
+    cwnd_carry = div2(
+      cwnd_carry.rem[0]+G*2, 
+      flight*G*2, 0);
     cwnd += cwnd_carry.quot;
   } else if (!cwr) {
     // Record start of CWR state
@@ -321,8 +316,9 @@ On_each_ACK'd_packet {
     // Check still in CWR round
     if (snd_una < next_seq) {
       // Multiplicative Decrease
-      cwnd_carry = div2(cwnd_carry.rem[1]
-                   +av_up, flight*G*2, 1);
+      cwnd_carry = div2(
+        cwnd_carry.rem[1]+av_up, 
+        flight*G*2, 1);
       cwnd -= cwnd_carry.quot;
     } else {
       cwr = false;
@@ -333,46 +329,47 @@ On_each_ACK'd_packet {
 %\caption{The whole per-ACK AIMD algorithm}
 %\label{fig:prresp_per-ack-aimd}
 %\end{figure}
+\paragraph{Additive Increase:} For completeness, the pseudocode above %in \autoref{fig:prresp_per-ack-aimd} 
+includes a Reno-like additive increase.
+This is intended for periods when the congestion control is close to its
+operating point (if it is not, see \S\,\ref{prresp_future}).
 
-For the AI and the MD, it will be noticed that a different division function, div2(), has been used to update \texttt{cwnd\_carry}. This allows the remainder to be used in both directions without relying on signed integers, as explained later.
-
-Unlike DCTCP, the proposed algorithm does not suspend additive increase during
+Unlike DCTCP, the proposed AI algorithm is not suppressed during
 CWR state, with the following reasoning. DCTCP-like congestion controls are
 designed to induce roughly 2 ECN marks per round trip in steady state, so RTTs
-without marks are not meant to happen. Confining increase to periods that are
+without marks are not meant to happen. Confining increases to periods that are
 not meant to happen creates an internal conflict within DCTCP's own design.
 Then, the algorithm's only escape is to store up enough decrease rounds to make
 space for a compensating period of increase. This has been found to cause
 unnecessary queue variation.
 
 Instead, we continue additive increase regardless of CWR state. In place of
-suspending additive increase for a whole round, a fractional increase is
-calculated per-ACK (as in most TCP implementations) but it is skipped if an ACK
+suspending additive increase for a whole round, a fractional increase (which is
+calculated per-ACK as in most TCP implementations), is skipped if an ACK
 carries congestion feedback. This thins down the additive increase as congestion
 rises (see \S\,3.1 of \cite{Briscoe17a:CC_Tensions_TR}).
 
-Also unlike DCTCP, the proposed algorithm increases \texttt{cwnd} by one segment
-over the actual window of packets in flight, not over the congestion window
-(which might not be fully used).
+Also unlike DCTCP, the increase in \texttt{cwnd} per round trip is divided
+over the actual number of packets in flight, not over the congestion window
+(which increases \texttt{cwnd} by 1 segment whether or not \texttt{cwnd} is fully used).
 
-\paragraph{Remainder Processing} The additive increase stores its remainder in the same \texttt{*cwnd\_carry}
+\paragraph{Shared Remainder} The additive increase stores its remainder in the same \texttt{*cwnd\_carry}
 variable as the multiplicative decrease. So both numerator and denominator are
 scaled up such that AI uses the same denominator parameter as MD, otherwise the
 upscaling of the carry variable would be different.
 
-Before the division for the increase, the numerator is added to the previous remainder. But, for the decrease, the numerator needs to be subtracted from the previous remainder. Using signed integers would halve the available number space. Instead, the remainder is always kept positive in the range \texttt{[0, \_denom-1]}. This is achieved by maintaining two positive remainders in a two-element array, \texttt{rem[2]}. Then \texttt{rem[0]} is used as the remainder for an increase in \texttt{cwnd}, while \texttt{rem[1]} is for a decrease.
+For both the AI and the MD, it will be noticed that a different division function, div2(), has been used to update \texttt{cwnd\_carry}. This allows the remainder to be used in both directions without relying on signed integers.
 
-This uses the division function, \texttt{div2()} defined below, which returns a structure containing both remainders, also defined below. It wraps the kernel macro \texttt{do\_div()}, which is used for efficient integer division. \texttt{do\_div()} already returns the positive remainder, and writes the result of the division into the numerator that it was called with.
+Before the division for AI, the numerator is added to the previous remainder. But, for MD, the numerator needs to be subtracted from the previous remainder. Using signed integers would halve the available number space. Instead, the remainder is always kept positive in the range \texttt{[0, denom-1]}. This is achieved by maintaining two positive remainders in a two-element array, \texttt{rem[2]}. Then \texttt{rem[0]} is used as the remainder for an increase in \texttt{cwnd}, while \texttt{rem[1]} is used for a decrease.
 
+This uses the division function, \texttt{div2()} defined below, which wraps the kernel macro \texttt{do\_div()}, which is used for efficient integer division. \texttt{do\_div()} already returns the positive remainder, and writes the result of the division into the numerator that it was called with. \texttt{div2()} returns a structure containing both remainders, also defined below. And it takes an extra boolean flip parameter to say which of the remainders \texttt{do\_div} should write into.
 \begin{verbatim}
 typedef struct {
   int quot;
   int rem[2];
 } div2_t;
-\end{verbatim}
 
-\begin{verbatim}
-struct div2_t div2(num, denom, bool flip)
+struct div2_t div2(num, denom, flip)
 {
   struct div2_t result;
   result.rem[flip] = do_div(num, denom);
@@ -382,9 +379,9 @@ struct div2_t div2(num, denom, bool flip)
 }
 \end{verbatim}
 
-Whenever either remainder changes the other (its complement) is kept in sync by the following relation: \texttt{rem[1] = denom - rem[0]}. For example, after a division by 1000, if the remainder is 400 for increases, the remainder for decreases will be 600. This can be thought of a jump from the bottom to the top of the denominator number space and a flip to viewing everything in the negative direction as if it was positive.
+Whenever either remainder changes the other is kept in sync as its complement by the following relation: \texttt{rem[1] = denom - rem[0]}. For example, after a division by 1000, if the remainder is 400 for increases, the remainder for decreases will be 600. This can be thought of a jump from the bottom to the top of the denominator number space and a flip to viewing everything in the negative direction as if it was positive.
 
-This ensures that the final result of a division (\texttt{quot}) is always rounded down (in the negative direction) before altering \texttt{cwnd}. Within any division that will be used for a decrease, the \texttt{\_denom} term added within \texttt{rem[1]} effectively rounds up, but only to keep everything positive within the division function---the result used outside the division function is still rounded down.
+This ensures that the final result of a division (\texttt{quot}) is always rounded down (in the negative direction) before altering \texttt{cwnd}. Within any division that will be used for a decrease, the \texttt{denom} term added within \texttt{rem[1]} effectively rounds up, but only to keep everything positive within the division function---the result used outside the division function is still rounded down.
 
 %For instance, for AI, the increasae in \texttt{cwnd} would be written longhand as follows:
 %	\texttt{cwnd <- cwnd + rem[0]/\_denom + num1/\_denom}.
@@ -406,10 +403,6 @@ This ensures that the final result of a division (\texttt{quot}) is always round
 %Or:
 %	\texttt{cwnd <- cwnd - quot2 + rem[0]/\_denom}.
 
-Note that the denominator of these divisions is not constant because it contains \texttt{flight}. Therefore, if \texttt{flight} is growing, a remainder calculated using earlier values of \texttt{flight} will be smaller than it ought to be. And vice versa if \texttt{flight} is shrinking. Given remainder processing has been included to correct first order errors, this error is of second order importance, and can be ignored.
-
-However, it is important to keep the two remainders in sync straight after either one has been updated. Otherwise the denominator used to calculate the other complement could have changed, leading to possible subtle underflow bugs.
-
 \section{(Non-)Concerns}\label{prresp_Non-Concerns}
 
 \subsection{Circular Dependency?}\label{prresp_No_Circular_Dependency}
@@ -425,13 +418,21 @@ on an implicit exponentially weighted moving average of \texttt{flight} with a
 characteristic smoothing timescale of \texttt{G} round trips. This removes any
 circular dependency.
 
+\subsection{Stale Remainder Scaling?}\label{prresp_Stale_Remainder_Scale}
+
+The denominator of each division used to calculate the remainder is not constant because it contains \texttt{flight}. Therefore, if \texttt{flight} is growing, a remainder calculated using earlier values of \texttt{flight} will be smaller than it ought to be. And vice versa if \texttt{flight} is shrinking. 
+
+This is a second order effect that should not alter the steady state that the AIMD converges to; it only puts a slightly different curve on the path to reach the steady state. 
+
+However, it is important to keep the two remainders in sync straight after either one has been updated. Otherwise if the complementary remainder is calculated later, the denominator could have changed, leading to possible subtle underflow bugs (or more complex code to catch these cases).
+
 \subsection{Advantage to Application Limited
 	Flows?}\label{prresp_Advantage_App-Limited}
 
 The reduction to \texttt{cwnd} is spread over the \texttt{flight} packets in a
 round of CWR, so each reduction is scaled down by \texttt{flight} in the
-denominator of the call to \texttt{div()}. This means that the
-decrease of \texttt{cwnd} is actually by a multiplicative factor of
+denominator of the call to \texttt{div()}. This means that \texttt{cwnd} is actually 
+decreased by a multiplicative factor of
 \texttt{flight}, not of \texttt{cwnd}.
 
 If a flow is not application-limited, the two amount to the same thing. But for
