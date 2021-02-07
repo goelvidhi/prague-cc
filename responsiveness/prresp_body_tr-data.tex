@@ -308,8 +308,8 @@ On_each_ACK'd_packet {
 
   if (!ce_fb) {
     // Additive Increase
-    cwnd_carry = 
-      div(cwnd_carry.rem+G*2, flight*G*2);
+    cwnd_carry = div2(cwnd_carry.rem[0]
+                 +G*2, flight*G*2, 0);
     cwnd += cwnd_carry.quot;
   } else if (!cwr) {
     // Record start of CWR state
@@ -321,13 +321,8 @@ On_each_ACK'd_packet {
     // Check still in CWR round
     if (snd_una < next_seq) {
       // Multiplicative Decrease
-      _denom = flight*G*2;
-      cwnd_carry.rem = 
-        _denom - cwnd_carry.rem;
-      cwnd_carry = 
-        div(cwnd_carry.rem+av_up, _denom);
-      cwnd_carry.rem = 
-        _denom - cwnd_carry.rem;
+      cwnd_carry = div2(cwnd_carry.rem[1]
+                   +av_up, flight*G*2, 1);
       cwnd -= cwnd_carry.quot;
     } else {
       cwr = false;
@@ -338,6 +333,8 @@ On_each_ACK'd_packet {
 %\caption{The whole per-ACK AIMD algorithm}
 %\label{fig:prresp_per-ack-aimd}
 %\end{figure}
+
+For the AI and the MD, it will be noticed that a different division function, div2(), has been used to update \texttt{cwnd\_carry}. This allows the remainder to be used in both directions without relying on signed integers, as explained later.
 
 Unlike DCTCP, the proposed algorithm does not suspend additive increase during
 CWR state, with the following reasoning. DCTCP-like congestion controls are
@@ -358,19 +355,60 @@ Also unlike DCTCP, the proposed algorithm increases \texttt{cwnd} by one segment
 over the actual window of packets in flight, not over the congestion window
 (which might not be fully used).
 
-The additive increase stores its remainder in the same \texttt{*cwnd\_carry}
+\paragraph{Remainder Processing} The additive increase stores its remainder in the same \texttt{*cwnd\_carry}
 variable as the multiplicative decrease. So both numerator and denominator are
 scaled up such that AI uses the same denominator parameter as MD, otherwise the
 upscaling of the carry variable would be different.
 
-Naively, the remainder could be added for AI and subtracted for MD. Instead, it
-is always added, but before and after the MD, it is respectively flipped to the
-opposite end of the number space of the denominator and back again. Whichever
-direction cwnd last moved in, this ensures that the remainder always lies in the
-range [0,\texttt{\_denom}-1]. This is preferable to handling a negative carry,
-which would halve the number space available for the scaled up variables.
-\bob{This doesn't work when flight has changed since cwnd\_carry.rem was last 
-	calculated. Will have to re-think.}
+Before the division for the increase, the numerator is added to the previous remainder. But, for the decrease, the numerator needs to be subtracted from the previous remainder. Using signed integers would halve the available number space. Instead, the remainder is always kept positive in the range \texttt{[0, \_denom-1]}. This is achieved by maintaining two positive remainders in a two-element array, \texttt{rem[2]}. Then \texttt{rem[0]} is used as the remainder for an increase in \texttt{cwnd}, while \texttt{rem[1]} is for a decrease.
+
+This uses the division function, \texttt{div2()} defined below, which returns a structure containing both remainders, also defined below. It wraps the kernel macro \texttt{do\_div()}, which is used for efficient integer division. \texttt{do\_div()} already returns the positive remainder, and writes the result of the division into the numerator that it was called with.
+
+\begin{verbatim}
+typedef struct {
+  int quot;
+  int rem[2];
+} div2_t;
+\end{verbatim}
+
+\begin{verbatim}
+struct div2_t div2(num, denom, bool flip)
+{
+  struct div2_t result;
+  result.rem[flip] = do_div(num, denom);
+  result.rem[!flip] = denom - result.rem[flip];
+  result.quot = num;
+  return result;
+}
+\end{verbatim}
+
+Whenever either remainder changes the other (its complement) is kept in sync by the following relation: \texttt{rem[1] = denom - rem[0]}. For example, after a division by 1000, if the remainder is 400 for increases, the remainder for decreases will be 600. This can be thought of a jump from the bottom to the top of the denominator number space and a flip to viewing everything in the negative direction as if it was positive.
+
+This ensures that the final result of a division (\texttt{quot}) is always rounded down (in the negative direction) before altering \texttt{cwnd}. Within any division that will be used for a decrease, the \texttt{\_denom} term added within \texttt{rem[1]} effectively rounds up, but only to keep everything positive within the division function---the result used outside the division function is still rounded down.
+
+%For instance, for AI, the increasae in \texttt{cwnd} would be written longhand as follows:
+%	\texttt{cwnd <- cwnd + rem[0]/\_denom + num1/\_denom}.
+%And for MD, the decrease in \texttt{cwnd} would be:
+%	\texttt{cwnd <- cwnd + rem[0]/\_denom - num2/\_denom}.
+%It is not important what the numerators are, except that they are positive integers, which we will call \texttt{num1} \& \texttt{num2}.
+%
+%The AI case is calculated as the following division:
+%	\texttt{cwnd <- cwnd + (rem[0] + num1)/\_denom},
+%which results in a quotient to add to \texttt{cwnd} and a new remainder in \texttt{rem[0]:
+%	\texttt{cwnd <- cwnd + quot1 + rem[0]/\_denom},
+%In contrast, the MD case is transformed before the division, which can then proceed with purely positive parameters, as follows:
+%	\texttt{cwnd <- cwnd - (rem[1] - \_denom + num2)/\_denom}.
+%	\texttt{cwnd <- cwnd - (rem[1] + num2)/\_denom + 1}.
+%The result will be a quotient and new remainder, this time placed in \texttt{rem[1]}.
+%	\texttt{cwnd <- cwnd - (quot2 + rem[1]/\_denom) + 1}.
+%\texttt{rem[0]} will be immediately updated to be the complement of \texttt{rem[1]} wrt \texttt{\_denom}. So the above is equivalent to:
+%	\texttt{cwnd <- cwnd - quot2 - (rem[1] - \_denom)/\_denom}.
+%Or:
+%	\texttt{cwnd <- cwnd - quot2 + rem[0]/\_denom}.
+
+Note that the denominator of these divisions is not constant because it contains \texttt{flight}. Therefore, if \texttt{flight} is growing, a remainder calculated using earlier values of \texttt{flight} will be smaller than it ought to be. And vice versa if \texttt{flight} is shrinking. Given remainder processing has been included to correct first order errors, this error is of second order importance, and can be ignored.
+
+However, it is important to keep the two remainders in sync straight after either one has been updated. Otherwise the denominator used to calculate the other complement could have changed, leading to possible subtle underflow bugs.
 
 \section{(Non-)Concerns}\label{prresp_Non-Concerns}
 
