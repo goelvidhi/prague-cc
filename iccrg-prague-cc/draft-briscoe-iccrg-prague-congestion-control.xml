@@ -302,6 +302,12 @@
         codepoint in private networks, such as data centres, which might be
         necessary for backward compatibility with DCTCP deployments where
         ECT(1) might already have another usage.</t>
+
+        <t>In the Linux implementation the kernel is updated to allow setting
+        the ECT(1) flag from within a CC module. The Prague CC has full 
+        control over the ECN code point used at all times and enforces in
+        this way the use of ECT(1) (or optionally ECT(0)) and non-ECT when
+        falling back.</t>
       </section>
 
       <section title="Detecting and Measuring Congestion">
@@ -338,6 +344,18 @@
             supports AccECN (as long as it follows the procedure in <xref
             target="I-D.ietf-tcpm-generalized-ecn"/> if it discovers the peer
             does not support AccECN).</t>
+
+            <t>In the Linux implementation the kernel is updated to support
+            accurate ECN, independent from the CC used, and will try to
+            negotiate an accurate ECN exchange for all congestion controls
+            selected. A system wide option is available to disable accurate 
+            ECN negotiation, but the Prague CC module will always overrule
+            this setting, as it relies on it. In that case accurate ECN will 
+            only be active for TCP flows using the Prague CC. An additional
+            check is provided to verify if an actual
+            accurate ECN scheme is supported, based on which the Prague CC
+            module will decide to proceed using the scalable CC or fall back
+            to a Classic CC (reno in the current implementation).</t>
           </section>
 
           <section title="Accurate ECN Feedback with Other Modern Transports">
@@ -448,8 +466,8 @@
           <t>A Prague CC has to fall back to Reno-friendly behaviour on
           detection of a loss (Req 4.3. <xref
           target="I-D.ietf-tsvwg-ecn-l4s-id"/>). DCTCP falls back to Reno for
-          the round trip after a loss, and the reference implementation of TCP
-          Prague inherits this behaviour.</t>
+          the round trip after a loss, and the Linux reference implementation
+          of TCP Prague inherits this behaviour.</t>
 
           <t>If a Prague CC has already reduced cwnd due to ECN feedback less
           than a round trip before it detects a loss, it MAY reduce cwnd by a
@@ -484,7 +502,7 @@
           further ECN feedback. This is termed Congestion Window Reduced or
           CWR state.</t>
 
-          <t>The Praguee CC (like DCTCP) ensures that the average recovery
+          <t>The Prague CC (like DCTCP) ensures that the average recovery
           time remains invariant as flow rate scales (Req 4.3 of <xref
           target="I-D.ietf-tsvwg-ecn-l4s-id"/>) by making the multiplicative
           decrease depend on the prevailing value of alpha as follows:<list
@@ -575,34 +593,41 @@
           marker (where rate =~ 1/p). To completely remove the RTT factor from
           the equation in both modes, and to be compatible with a specific
           reference RTT RR, both the window update period and the alpha
-          calculation period are (MUST be?) aligned with RR instead of the
-          real measured RTT.</t>
+          calculation period must be aligned with RR instead of the
+          real measured RTT. To achieve this, the effective rate must be 
+          multiplied by a factor M = RR/RTT, a number bigger than 1 if RR
+          is bigger than RTT. As the window W is still send within 1 real RTT,
+          we also need to think in terms of a (non-existing/virtual) reference
+          window RW which is RR/RTT times bigger than the actual window W. 
+          This RW would be the window that a flow with RTT = RR would have.</t>
 
-          <t>Additionally to make sure the same AI (1 segment per RR) is
-          applied over a shorter RTT, only RTT/RR segment fractions will be
-          added per RR. In effect this will result in only one extra segment
-          per RR/RTT RTTs. The increase algorithm is reusing the fractional
+          <t>So to make sure the same AI in terms of rate (only 1 segment per
+          RW and per RR) is applied over a shorter W and RTT flow, only 1/M segment 
+          fractions can be added to W per RR (as W is send M times per RR).
+          An additional 1/M reduction factor needs to be applied to W increase
+          per RTT, as RTT is M times shorter than RR. This explains why we need
+          to increase W only by 1/M^2 fractions per RTT. In effect this will
+          result in only an extra segments send per RR. The increase
+          algorithm is reusing the fractional
           increase value as explained in the previous topic. Similar for
-          longer RTTs than RR, RTT/RR segments would need to be added per RR.
+          longer RTTs than RR, (RTT/RR)^2 segments would need to be added per RR.
           The current Prague implementation does not support this faster AI
           for RTTs longer than RR, due to expected (though never evaluated)
-          impact on latency overshoot and slowed responsiveness. As an
-          alternative a good aproach would be to only track and support the
-          random marking response (1/p) as an on/off response (1/p^2) is only
-          applicable for the lowest competing RTTs.</t>
+          impact on latency overshoot and slowed responsiveness.</t>
 
           <t>The Linux Prague implementation uses a RR = f(RTT) to determin
           the reference RTT from the measured RTT. It implements 3 functions:
-          f(RTT) = max(RTT, RR); f(RTT) = ... {ToDo}</t>
+          f(RTT) = max(RTT, RR); f(RTT) = RTT + AdditionalRTT; f(RTT) = ... 
+          {ToDo}. The current default is f(RTT) = max(RTT, 25ms).</t>
 
           <t>To benefit from lower base RTTs the Reduced RTT Dependence
           algorithm only becomes gradual effective after a configurable amount
-          D RTTs (default 50). This means that initially the flow is as slow
+          D RTTs (current default 500). This means that initially the flow is as slow
           start responsive and gets an initial throughput based on its real
           RTT. Only after D RTTs the throughput will converge to the equal
           rate. The benefit is that short flows (mices) will get priority over
-          longer flows. An idle reset time can be added. {to be
-          verified...}</t>
+          longer flows, and shorter RTTs will still converge faster than longer
+          RTTs. An idle reset time can be added. {to be verified...}</t>
         </section>
       </section>
 
@@ -635,12 +660,18 @@
         the current pacing_rate, it calculates how many MTU-sized packets to
         allow in a burst:<list style="empty">
             <t>max_burst = pacing_rate * MAX_BURST_DELAY / MTU_BITS</t>
-          </list></t>
+          </list>
+        The current default for MAX_BURST_DELAY is 250us which supports 
+        marking thresholds starting from about 500us without underutilization.</t>
       </section>
 
       <section anchor="pracc_flow_start" title="Flow Start or Restart">
         <t>{ToDo: Probably ought to be moved to S.5} Pace IW; Paced Chirping?
-        Hystart++?</t>
+        Hystart++?
+        Currently the Prague Linux reference implementation uses the standard 
+        Linux slow start code. Slow start is exited ones a single mark is detected.
+        When other flows are actively filling the link, regular marks are expected,
+        causing slowstart of new flows to end prematurely. See section...</t>
       </section>
     </section>
 
