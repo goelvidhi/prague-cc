@@ -610,24 +610,26 @@
           sent within 1 actual RTT, we also need to use a
           (non-existent/virtual) reference window, W_ref. For instance, if
           RTT_ref = 25 ms then, when the actual RTT is 5 ms, there are
-          RTT_ref/RTT = 5 times more packets in the reference window, W_ref,
-          than in the actual window, W, because it spans 5 actual round trips.
-          We define M as the ratio RTT_ref/RTT.</t>
+          RTT_ref/RTT = 5 times more packets in W_ref, than in the actual
+          window, W, because it spans 5 actual round trips. We define M as the
+          ratio RTT_ref/RTT.</t>
 
-          <t>In the Linux implementation of Prague, RTT_ref is a function of
-          the actual RTT. 3 functions have been implemented: RTT_ref =
+          <t>In the Linux implementation of TCP Prague, RTT_ref is a function
+          of the actual RTT. 3 functions have been implemented: RTT_ref =
           max(RTT, RTT_REF_MIN); RTT_ref = RTT + AdditionalRTT; RTT_ref = ...
-          {ToDo}. The current default is RTT_ref = max(RTT, 25ms).</t>
+          {ToDo}. The current default is RTT_ref = max(RTT, 25ms), which
+          addresses the main Prague requirement for when the RTT is smaller
+          than typical.</t>
 
           <t>In Reno or DCTCP, additive increase is implemented by dividing
           the desired increase of 1 segment per round over the W packets in
-          the round. This requires an increase of 1/W per packet. In Prague,
-          the aim is to increase the reference window by 1 segment over a
-          reference round. However, in practice the increase is applied to the
-          actual window, W, which is M times smaller than the reference
-          window, W_ref. So W has to be increased by only 1/M segments over
-          RTT_ref. But again, in practice, the increase is applied over an
-          actual window of packets spanning an actual RTT, which is also M
+          the round. This requires an increase of 1/W per packet. In the Linux
+          implementation of TCP Prague, the aim is to increase the reference
+          window by 1 segment over a reference round. However, in practice the
+          increase is applied to the actual window, W, which is M times
+          smaller than W_ref. So W has to be increased by only 1/M segments
+          over RTT_ref. But again, in practice, the increase is applied over
+          an actual window of packets spanning an actual RTT, which is also M
           times smaller than the reference RTT. So the desired increase in W
           is only 1/M^2 segments over an actual round trip containing W
           packets. Therefore, the increase in W per packet has to be 1/(M^2 *
@@ -635,14 +637,14 @@
 
           <t>Unless a flow lasts long enough for rates to converge, equal
           rates are not relevant. So, to benefit from lower base RTTs the
-          Reduced RTT-Dependence algorithm only becomes effective gradually -
-          after D rounds, where D is configurable (current default 500). This
-          means that reduced RTT-dependence does not make the flow less
-          responsive at start-up and its initial throughput is based on its
-          actual RTT. Nonetheless, the throughput still converges to equal
-          rates after D rounds. The benefit is that short flows (mice) give
-          themselves priority over longer flows (elephants), and shorter RTTs
-          will still converge faster than longer RTTs. </t>
+          Reduced RTT-Dependence algorithm only becomes fully effective
+          gradually - after D rounds, where D is configurable (current default
+          500). This means that reduced RTT-dependence does not make the flow
+          less responsive at start-up and its early throughput share is based
+          on its actual RTT. Nonetheless, the throughput still converges to
+          equal rates after D rounds. The benefit is that short flows (mice)
+          give themselves priority over longer flows (elephants), and shorter
+          RTTs will still converge faster than longer RTTs. </t>
 
           <t>It is planned to reset the algorithm to be RTT-dependent after an
           idle, not just at flow start, as discussed under Future Work in
