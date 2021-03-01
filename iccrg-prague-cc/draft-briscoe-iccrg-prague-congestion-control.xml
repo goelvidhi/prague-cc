@@ -399,19 +399,19 @@
               between 0 and 1, and it needs to be represented with high
               resolution because the larger the bandwidth-delay product (BDP)
               of a flow, the smaller the value that alpha converges to (in
-              steady state alpha = 2/W, where W is the congestion window). In
-              principle, Linux DCTCP maintains the moving average 'alpha'
-              using the same formula as Prague CC uses (as above). Linux
-              represents alpha with a 10-bit integer (with resolution 1/1024).
-              However, up to kernel release 3.19, Linux used integer
-              arithmetic that could not reduce alpha below 15/1024. Then it
-              was patched so that any value below 16/1024 was rounded down to
-              zero <xref target="patch-alpha-zero"/>. For a flow with a higher
-              BDP than 128 segments, this means that, alpha flip-flops. Once
-              it has flopped down to zero DCTCP becomes unresponsive until it
-              has built sufficient queue to flip up to 16/1024. For larger
-              BDPs, this causes DCTCP to induce larger sawteeth, which loses
-              the low-queuing-delay and high-utilization intent of the
+              steady state alpha = 2/cwnd). In principle, Linux DCTCP
+              maintains the moving average 'alpha' using the same formula as
+              Prague CC uses (as above). Linux represents alpha with a 10-bit
+              integer (with resolution 1/1024). However, up to kernel release
+              3.19, Linux used integer arithmetic that could not reduce alpha
+              below 15/1024. Then it was patched so that any value below
+              16/1024 was rounded down to zero <xref
+              target="patch-alpha-zero"/>. For a flow with a higher BDP than
+              128 segments, this means that, alpha flip-flops. Once it has
+              flopped down to zero DCTCP becomes unresponsive until it has
+              built sufficient queue to flip up to 16/1024. For larger BDPs,
+              this causes DCTCP to induce larger sawteeth, which loses the
+              low-queuing-delay and high-utilization intent of the
               algorithm.</t>
 
               <t hangText="Upscaled alpha in Prague CC:">To resolve the above
@@ -513,7 +513,7 @@
           target="I-D.ietf-tsvwg-ecn-l4s-id"/>) by making the multiplicative
           decrease depend on the prevailing value of alpha as follows:<list
               style="empty">
-              <t>ssthresh = (1 - alpha/2) * W;</t>
+              <t>ssthresh = (1 - alpha/2) * cwnd;</t>
             </list></t>
 
           <t>Implementation notes:<list style="hanging">
@@ -548,7 +548,7 @@
           state). Instead, a Prague CC applies additive increase irrespective
           of its CWR state, but only for bytes that have been ACK'd without
           ECN feedback. Specifically, on each ACK,<figure>
-              <artwork><![CDATA[    W += (acked_sacked - ece_delta) * ai_per_rtt / W;
+              <artwork><![CDATA[    cwnd += (acked_sacked - ece_delta) * ai_per_rtt / cwnd;
 ]]></artwork>
             </figure>where:<list style="empty">
               <t>acked_sacked is the number of new bytes acknowledged by the
@@ -597,22 +597,23 @@
 
           <t>Queuing delay sets a lower limit to the smallest possible RTT.
           So, prior to the extremely low queuing delay of L4S, extreme cases
-          of RTT dependence had never been apparent. Now that we have removed
-          most of the queuing delay, we have to find another way to reduce
-          RTT-dependence, which Prague is required to do when the RTT is small
-          (see the 'Reduced RTT bias' aspect of Req 4.3. <xref
-          target="I-D.ietf-tsvwg-ecn-l4s-id"/>). A small RTT is defined as
-          below the typical RTT for the intended deployment environment.</t>
+          of RTT dependence had never been apparent. Now that L4S has removed
+          most of the queuing delay, we have to address the root-cause of
+          RTT-dependence, which the Prague CC is required to do, at least when
+          the RTT is small (see the 'Reduced RTT bias' aspect of Req 4.3.
+          <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>). Here, a small RTT is
+          defined as below the typical RTT for the intended deployment
+          environment.</t>
 
           <t>A Prague CC reduces RTT bias by using a reference RTT (RTT_ref)
-          rather than the actual round trip (RTT) for both the window update
-          period and the EWMA update period. As the actual window (W) is still
-          sent within 1 actual RTT, we also need to use a
-          (non-existent/virtual) reference window, W_ref. For instance, if
-          RTT_ref = 25 ms then, when the actual RTT is 5 ms, there are
-          RTT_ref/RTT = 5 times more packets in W_ref, than in the actual
-          window, W, because it spans 5 actual round trips. We define M as the
-          ratio RTT_ref/RTT.</t>
+          rather than the actual round trip (RTT) for all three of: the window
+          update period; the EWMA update period; and the duration of CWR state
+          after a decrease. As the actual window (cwnd) is still sent within 1
+          actual RTT, we also need to use a (conceptual) reference window,
+          cwnd_ref. For instance, if RTT_ref = 25 ms then, when the actual RTT
+          is 5 ms, there are RTT_ref/RTT = 5 times more packets in cwnd_ref,
+          than in the actual window, cwnd, because it spans 5 actual round
+          trips. We define M as the ratio RTT_ref/RTT.</t>
 
           <t>In the Linux implementation of TCP Prague, RTT_ref is a function
           of the actual RTT. 3 functions have been implemented: RTT_ref =
@@ -622,29 +623,37 @@
           than typical.</t>
 
           <t>In Reno or DCTCP, additive increase is implemented by dividing
-          the desired increase of 1 segment per round over the W packets in
-          the round. This requires an increase of 1/W per packet. In the Linux
-          implementation of TCP Prague, the aim is to increase the reference
-          window by 1 segment over a reference round. However, in practice the
-          increase is applied to the actual window, W, which is M times
-          smaller than W_ref. So W has to be increased by only 1/M segments
-          over RTT_ref. But again, in practice, the increase is applied over
-          an actual window of packets spanning an actual RTT, which is also M
-          times smaller than the reference RTT. So the desired increase in W
-          is only 1/M^2 segments over an actual round trip containing W
-          packets. Therefore, the increase in W per packet has to be 1/(M^2 *
-          W).</t>
+          the desired increase of 1 segment per round over the cwnd packets in
+          the round. This requires an increase of 1/cwnd per packet. In the
+          Linux implementation of TCP Prague, the aim is to increase the
+          reference window by 1 segment over a reference round. However, in
+          practice the increase is applied to the actual window, cwnd, which
+          is M times smaller than cwnd_ref. So cwnd has to be increased by
+          only 1/M segments over RTT_ref. But again, in practice, the increase
+          is applied over an actual window of packets spanning an actual RTT,
+          which is also M times smaller than the reference RTT. So the desired
+          increase in cwnd is only 1/M^2 segments over an actual round trip
+          containing cwnd packets. Therefore, the increase in cwnd per packet
+          has to be (1/M^2) * (1/cwnd).</t>
 
           <t>Unless a flow lasts long enough for rates to converge, equal
-          rates are not relevant. So, to benefit from lower base RTTs the
-          Reduced RTT-Dependence algorithm only becomes fully effective
-          gradually - after D rounds, where D is configurable (current default
-          500). This means that reduced RTT-dependence does not make the flow
-          less responsive at start-up and its early throughput share is based
-          on its actual RTT. Nonetheless, the throughput still converges to
-          equal rates after D rounds. The benefit is that short flows (mice)
-          give themselves priority over longer flows (elephants), and shorter
-          RTTs will still converge faster than longer RTTs. </t>
+          rates will not be relevant. So, the Reduced RTT-Dependence algorithm
+          only comes into effect after D rounds, where D is configurable
+          (current default 500). Continuing the previous example, if actual
+          RTT=5 ms and RTT_ref = 25 ms, then Prague would stop using its
+          RTT-dependent algorithm after 500*5ms = 2.5s and instead it would
+          start to converge to equal rates using the Reduced RTT-Dependence
+          algorithm. If the actual RTT were higher (e.g. 20ms), it would stay
+          in RTT-dependent mode for longer (10s), but this would be mitigated
+          by its RTT being closer to the reference (20ms vs. 25ms).</t>
+
+          <t>This approach prevents reduced RTT-dependence from making the
+          flow less responsive at start-up and ensures that its early
+          throughput share is based on its actual RTT. The benefit is that
+          short flows (mice) give themselves priority over longer flows
+          (elephants), and shorter RTTs will still converge faster than longer
+          RTTs. Nonetheless, the throughput still converges to equal rates
+          after D rounds. </t>
 
           <t>It is planned to reset the algorithm to be RTT-dependent after an
           idle, not just at flow start, as discussed under Future Work in
@@ -657,74 +666,69 @@
         </section>
       </section>
 
-      <section title="Packet Pacing">
-        <t>The Prague CC SHOULD pace the packets it sends to avoid the queuing
-        delay and under-utilization that would otherwise be caused by bursts
-        of packets that can occur, e.g. when a jump in the acknowledgement
-        number opens up cwnd. Prague does this in a similar way to the base
-        Linux TCP stack, by spacing out the window of packets evenly over the
-        round trip time, using the following calculation of the pacing rate
-        [b/s]:<list style="empty">
-            <t>pacing_rate = MTU_BITS * max(cwnd, inflight) / srtt;</t>
-          </list></t>
+      <section title="Packet Sending">
+        <t/>
 
-        <t>During slow start, as in the base Linux TCP stack, Prague factors
-        up pacing_rate by 2, so that it paces out packets twice as fast as
-        they are acknowledged. This keeps up with the doubling of cwnd, but
-        still prevents bursts in response to any larger transient jumps in
-        cwnd.<figure>
-            <artwork><![CDATA[    if (cwnd < ssthresh / 2)
+        <section title="Packet Pacing">
+          <t>The Prague CC SHOULD pace the packets it sends to avoid the
+          queuing delay and under-utilization that would otherwise be caused
+          by bursts of packets that can occur, for example, when a jump in the
+          acknowledgement number opens up cwnd. Prague does this in a similar
+          way to the base Linux TCP stack, by spacing out the window of
+          packets evenly over the round trip time, using the following
+          calculation of the pacing rate [b/s]:<list style="empty">
+              <t>pacing_rate = MTU_BITS * max(cwnd, inflight) / srtt;</t>
+            </list></t>
+
+          <t>During slow start, as in the base Linux TCP stack, Prague factors
+          up pacing_rate by 2, so that it paces out packets twice as fast as
+          they are acknowledged. This keeps up with the doubling of cwnd, but
+          still prevents bursts in response to any larger transient jumps in
+          cwnd.<figure>
+              <artwork><![CDATA[    if (cwnd < ssthresh / 2)
         pacing_rate *= 2;
 ]]></artwork>
-          </figure></t>
+            </figure></t>
 
-        <t>During congestion avoidance, Prague does not factor up pacing_rate
-        at all. This contrasts with the base Linux TCP stack, which factors up
-        pacing_rate by a ratio parameter set to 1.2. The developers of the
-        base Linux stack confirmed that this factor of 1.2 was only introduced
-        in case it improved performance, but there were no scenarios where it
-        was known to be needed. In testing of Prague, this factor was found to
-        cause queue delay spikes whenever cwnd jumped more than usual. And
-        throughput was no worse without it. So it was removed from the Prague
-        CC.</t>
+          <t>During congestion avoidance, Prague does not factor up
+          pacing_rate at all. This contrasts with the base Linux TCP stack,
+          which currently factors up pacing_rate by a ratio parameter set to
+          1.2. The developers of the base Linux stack confirmed that this
+          factor of 1.2 was only introduced in case it improved performance,
+          but there were no scenarios where it was known to be needed. In
+          testing of Prague, this factor was found to cause queue delay spikes
+          whenever cwnd jumped more than usual. And throughput was no worse
+          without it. So it was removed from the TCP Prague CC.</t>
 
-        <t>However, in the absence of hardware pacing, it becomes increasingly
-        difficult for a machine to scale to higher flow rates unless it is
-        allowed to send packets in larger bursts, for instance using
-        segmentation offload. Happily, as flow rate scales up, proportionately
-        more packets can be allowed in a burst for the same amount of queuing
-        delay at the bottleneck.</t>
+          <t>The Prague CC can use alternatives to the traditional slow-start
+          algorithm, which use different pacing (see <xref
+          target="pracc_flow_start"/>).</t>
+        </section>
 
-        <t>Therefore, the Prague CC sends packets in a burst as long as it
-        will not induce more than MAX_BURST_DELAY of queuing at the
-        bottleneck. From this constant and the current pacing_rate, it
-        calculates how many MTU-sized packets to allow in a burst:<list
-            style="empty">
-            <t>max_burst = pacing_rate * MAX_BURST_DELAY / MTU_BITS</t>
-          </list></t>
+        <section title="Segmentation Offload">
+          <t>In the absence of hardware pacing, it becomes increasingly
+          difficult for a machine to scale to higher flow rates unless it is
+          allowed to send packets in larger bursts, for instance using
+          segmentation offload. Happily, as flow rate scales up,
+          proportionately more packets can be allowed in a burst for the same
+          amount of queuing delay at the bottleneck.</t>
 
-        <t>The Prague CC can use alternatives to the traditional slow-start
-        algorithm, which use different pacing (see <xref
-        target="pracc_flow_start"/>).</t>
-
-        <t>It becomes increasingly difficult for a machine to scale to higher
-        flow rates unless it is allowed to send packets in larger bursts, for
-        instance using segmentation offload. Happily, as flow rate scales up,
-        proportionately more packets can be allowed in a burst for the same
-        amount of queuing delay at the bottleneck. Therefore, the Prague CC
-        sends packets in a burst as long as it will not induce more than
-        MAX_BURST_DELAY of queuing at the bottleneck. From this constant and
-        the current pacing_rate, it calculates how many MTU-sized packets to
-        allow in a burst:<list style="empty">
-            <t>max_burst = pacing_rate * MAX_BURST_DELAY / MTU_BITS</t>
-          </list> The current default for MAX_BURST_DELAY is 250us which
-        supports marking thresholds starting from about 500us without
-        underutilization.</t>
+          <t>Therefore, the Prague CC sends packets in a burst as long as it
+          will not induce more than MAX_BURST_DELAY of queuing at the
+          bottleneck. From this constant and the current pacing_rate, it
+          calculates how many MTU-sized packets to allow in a burst:<list
+              style="empty">
+              <t>max_burst = pacing_rate * MAX_BURST_DELAY / MTU_BITS</t>
+            </list>The current default for MAX_BURST_DELAY is 250us which
+          supports marking thresholds starting from about 500us without
+          underutilization. This approach is similar to that in the Linux TCP
+          stack, except there MAX_BURST_DELAY is 1ms.</t>
+        </section>
       </section>
 
       <section anchor="pracc_flow_start" title="Flow Start or Restart">
         <t>Currently the Prague Linux reference implementation uses the
-        standard Linux slow start code. Slow start is exited ones a single
+        standard Linux slow start code. Slow start is exited once a single
         mark is detected. When other flows are actively filling the link,
         regular marks are expected, causing slow start of new flows to end
         prematurely. See <xref target="pracc_flow_start_future"/>.</t>
