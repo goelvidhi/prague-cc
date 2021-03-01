@@ -143,6 +143,32 @@
     <section anchor="pracc_intro" title="Introduction">
       <t>{ToDo: Copy largely from netdev Prague paper (not too elaborate)}</t>
 
+      <section title="Maturity Status (To be Removed Before Publication)">
+        <t>The field of congestion control is always a work in progress.
+        However, there are areas of the Prague CC that are not yet even be
+        complete. And in other implementations of the Prague CC, other areas
+        are incomplete. In the Linux reference implementation of TCP Prague,
+        interim code is used in these incomplete areas. They are:<list
+            style="symbols">
+            <t>Flow start and restart (standard slow start is used, even
+            though it often exits early in L4S environments were ECN marking
+            tends to be frequent);</t>
+
+            <t>Faster than additive increase (standard additive increase is
+            used, which makes the flow particularly sluggish if it has dropped
+            out of slow start early).</t>
+          </list>The body of this document describes the Prague CC as
+        implemented (primarily in the Linux reference implementation, but also
+        notes on other implementations are sometimes given). Any non-default
+        options or any planned improvements are separated out into <xref
+        target="pracc_future_work"/> on "Variants and Future Work". As each of
+        the above areas is addressed, it will will be removed from this
+        section and its decription in the body of the document will be
+        updated. Once all areas are complete, this section will be removed.
+        Prague CC will then still be a work in progress, but only on a similar
+        footing as all other congestion controls.</t>
+      </section>
+
       <section anchor="pracc_motivation"
                title="Motivation: Low Delay /and/ High Bandwidth">
         <t>{ToDo: Copy largely from netdev Prague paper.}</t>
@@ -707,15 +733,16 @@ RTT_ref is /not/ used for:
 ]]></artwork>
             </figure></t>
 
-          <t>During congestion avoidance, Prague does not factor up
-          pacing_rate at all. This contrasts with the base Linux TCP stack,
-          which currently factors up pacing_rate by a ratio parameter set to
-          1.2. The developers of the base Linux stack confirmed that this
-          factor of 1.2 was only introduced in case it improved performance,
-          but there were no scenarios where it was known to be needed. In
-          testing of Prague, this factor was found to cause queue delay spikes
-          whenever cwnd jumped more than usual. And throughput was no worse
-          without it. So it was removed from the TCP Prague CC.</t>
+          <t>During congestion avoidance, the Linux TCP Prague implementation
+          does not factor up pacing_rate at all. This contrasts with the base
+          Linux TCP stack, which currently factors up pacing_rate by a ratio
+          parameter set to 1.2. The developers of the base Linux stack
+          confirmed that this factor of 1.2 was only introduced in case it
+          improved performance, but there were no scenarios where it was known
+          to be needed. In testing of Prague, this factor was found to cause
+          queue delay spikes whenever cwnd jumped more than usual. And
+          throughput was no worse without it. So it was removed from the TCP
+          Prague CC.</t>
 
           <t>The Prague CC can use alternatives to the traditional slow-start
           algorithm, which use different pacing (see <xref
@@ -736,15 +763,16 @@ RTT_ref is /not/ used for:
           calculates how many MTU-sized packets to allow in a burst:<list
               style="empty">
               <t>max_burst = pacing_rate * MAX_BURST_DELAY / MTU_BITS</t>
-            </list>The current default for MAX_BURST_DELAY is 250us which
-          supports marking thresholds starting from about 500us without
-          underutilization. This approach is similar to that in the Linux TCP
-          stack, except there MAX_BURST_DELAY is 1ms.</t>
+            </list>The current default in the Linux TCP Prague for
+          MAX_BURST_DELAY is 250us which supports marking thresholds starting
+          from about 500us without underutilization. This approach is similar
+          to that in the Linux TCP stack, except there MAX_BURST_DELAY is
+          1ms.</t>
         </section>
       </section>
     </section>
 
-    <section title="Variants and Future Work">
+    <section anchor="pracc_future_work" title="Variants and Future Work">
       <t/>
 
       <section title="Getting up to Speed Faster">
