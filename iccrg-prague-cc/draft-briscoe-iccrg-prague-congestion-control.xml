@@ -587,19 +587,6 @@
           target="pracc_faster_ai"/>)</t>
         </section>
 
-        <section anchor="pracc_flow_start" title="Flow Start or Restart">
-          <t>Currently the Linux reference implementation of TCP Prague uses
-          the standard Linux slow start code. Slow start is exited once a
-          single mark is detected. </t>
-
-          <t>When other flows are actively filling the link, regular marks are
-          expected, causing slow start of new flows to end prematurely. This
-          is clearly not ideal, so other approaches are being worked on (see
-          <xref target="pracc_flow_start_future"/>). However, slow start has
-          been left as the default until a properly matured solution is
-          completed. </t>
-        </section>
-
         <section anchor="pracc_rtt_independence"
                  title="Reduced RTT-Dependence">
           <t>The window-based AIMD described so far was inherited from Reno
@@ -680,6 +667,19 @@ RTT_ref is /not/ used for:
           extending the reduction in RTT-dependence to longer RTTs than than
           RTT_ref. The current Prague implementation does not support
           this.</t>
+        </section>
+
+        <section anchor="pracc_flow_start" title="Flow Start or Restart">
+          <t>Currently the Linux reference implementation of TCP Prague uses
+          the standard Linux slow start code. Slow start is exited once a
+          single mark is detected.</t>
+
+          <t>When other flows are actively filling the link, regular marks are
+          expected, causing slow start of new flows to end prematurely. This
+          is clearly not ideal, so other approaches are being worked on (see
+          <xref target="pracc_flow_start_future"/>). However, slow start has
+          been left as the default until a properly matured solution is
+          completed.</t>
         </section>
       </section>
 
