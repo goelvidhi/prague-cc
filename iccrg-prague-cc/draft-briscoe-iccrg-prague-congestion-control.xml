@@ -587,6 +587,19 @@
           target="pracc_faster_ai"/>)</t>
         </section>
 
+        <section anchor="pracc_flow_start" title="Flow Start or Restart">
+          <t>Currently the Linux reference implementation of TCP Prague uses
+          the standard Linux slow start code. Slow start is exited once a
+          single mark is detected. </t>
+
+          <t>When other flows are actively filling the link, regular marks are
+          expected, causing slow start of new flows to end prematurely. This
+          is clearly not ideal, so other approaches are being worked on (see
+          <xref target="pracc_flow_start_future"/>). However, slow start has
+          been left as the default until a properly matured solution is
+          completed. </t>
+        </section>
+
         <section anchor="pracc_rtt_independence"
                  title="Reduced RTT-Dependence">
           <t>The window-based AIMD described so far was inherited from Reno
@@ -613,7 +626,11 @@
           cwnd_ref. For instance, if RTT_ref = 25 ms then, when the actual RTT
           is 5 ms, there are RTT_ref/RTT = 5 times more packets in cwnd_ref,
           than in the actual window, cwnd, because it spans 5 actual round
-          trips. We define M as the ratio RTT_ref/RTT.</t>
+          trips. We define M as the ratio RTT_ref/RTT.<!--ToDo: Say what the reference values are not used for:
+* cwnd_ref is not used for regulating the sending of packets (i.e. Prague still uses the min  of cwnd and rwnd)
+
+RTT_ref is /not/ used for:
+* retransmission timers (i.e. RTT is still used)--></t>
 
           <t>In the Linux implementation of TCP Prague, RTT_ref is a function
           of the actual RTT. 3 functions have been implemented: RTT_ref =
@@ -725,14 +742,6 @@
           stack, except there MAX_BURST_DELAY is 1ms.</t>
         </section>
       </section>
-
-      <section anchor="pracc_flow_start" title="Flow Start or Restart">
-        <t>Currently the Prague Linux reference implementation uses the
-        standard Linux slow start code. Slow start is exited once a single
-        mark is detected. When other flows are actively filling the link,
-        regular marks are expected, causing slow start of new flows to end
-        prematurely. See <xref target="pracc_flow_start_future"/>.</t>
-      </section>
     </section>
 
     <section title="Variants and Future Work">
@@ -789,14 +798,16 @@
 
       <section anchor="pracc_further_rtt_independence"
                title="Further Reduced RTT-Dependence">
+        <t>{ToDo:}</t>
+
         <t>An idle reset time can be added. {ToDo: to be verified...}</t>
+
+        <t>RTT_ref could be a function of more than just RTT.</t>
 
         <t>Similar for longer RTTs than RR, (RTT/RR)^2 segments would need to
         be added per RR. The current Prague implementation does not support
         this faster AI for RTTs longer than RR, due to expected (though never
         evaluated) impact on latency overshoot and slowed responsiveness.</t>
-
-        <t>{ToDo}</t>
       </section>
 
       <section title="Scaling Down to Fractional Windows">
