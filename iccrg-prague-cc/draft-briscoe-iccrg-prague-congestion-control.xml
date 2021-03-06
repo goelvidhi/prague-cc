@@ -488,12 +488,13 @@
         </section>
       </section>
 
-      <section title="Congestion Response Algorithm">
+      <section anchor="pracc_Congestion_response"
+               title="Congestion Response Algorithm">
         <t>In congestion avoidance phase, a Prague CC uses a similar additive
         increase multiplicative decrease (AIMD) algorithm to DCTCP, but with
         the following differences:</t>
 
-        <section title="Fall-Back on Loss">
+        <section anchor="pracc_fallback_loss" title="Fall-Back on Loss">
           <t>A Prague CC has to fall back to Reno-friendly behaviour on
           detection of a loss (Req 4.3. <xref
           target="I-D.ietf-tsvwg-ecn-l4s-id"/>). DCTCP falls back to Reno for
@@ -519,7 +520,8 @@
             </list></t>
         </section>
 
-        <section title="Multiplicative Decrease on ECN Feedback">
+        <section anchor="pracc_MD"
+                 title="Multiplicative Decrease on ECN Feedback">
           <t>The Prague CC currently responds to ECN feedback in a similar way
           to DCTCP. This section is provided mainly because performance has
           proved to be sensitive to implementation details in this area. So
@@ -568,7 +570,7 @@
           future work).</t>
         </section>
 
-        <section title="Additive Increase and ECN Feedback">
+        <section anchor="pracc_AI" title="Additive Increase and ECN Feedback">
           <t>Unlike DCTCP, the Prague CC does not suppress additive increase
           for one round trip after a congestion window reduction (while in CWR
           state). Instead, a Prague CC applies additive increase irrespective
@@ -683,7 +685,7 @@ RTT_ref is /not/ used for:
           short flows (mice) give themselves priority over longer flows
           (elephants), and shorter RTTs will still converge faster than longer
           RTTs. Nonetheless, the throughput still converges to equal rates
-          after D rounds. </t>
+          after D rounds.</t>
 
           <t>It is planned to reset the algorithm to be RTT-dependent after an
           idle, not just at flow start, as discussed under Future Work in
@@ -776,38 +778,164 @@ RTT_ref is /not/ used for:
       <t/>
 
       <section title="Getting up to Speed Faster">
-        <t/>
+        <t>Appendix A.2. of <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>
+        outlines the performance optimizations needed when transplanting DCTCP
+        from a DC environment to a wide area network. The following
+        subsections address two of those points: faster flow startup and
+        faster than additive increase. Then <xref
+        target="pracc_faster_response"/> covers the flip side, in which
+        established flows have to yield faster to make room, otherwise queuing
+        will result.</t>
 
         <section anchor="pracc_flow_start_future"
                  title="Flow Start (or Restart)">
-          <t>Pace IW (currently optional); Paced Chirping? Hystart++?</t>
+          <t>The Prague performance For faster flow start, two approaches are
+          currently being investigated in parallel:<list style="hanging">
+              <t hangText="Modified Slow Start:">The traditional exponential
+              slow start can be modified both at the start and the end, with
+              the aim of reducing the risk of queuing due to bursts and
+              overshoot:<list style="hanging">
+                  <t hangText="Pacing IW:">A Prague CC can use an initial
+                  window of 10 (IW10 <xref target="RFC6928"/>), but pacing of
+                  this Initial Window is recommended to try to avoid the pulse
+                  of queuing that could otherwise occur. Pacing IW10 also
+                  spreads the ACKs over the round trip so that subsequent
+                  rounds consist of ten subsets of packets (with 2, 4, 8 etc.
+                  per round in each subset), rather than a single set with 20,
+                  40, 80 etc. in each round. Then, if a queue builds during a
+                  round (e.g. due to other unexpected traffic arriving) it can
+                  drain in the gap before the next subset, rather than the
+                  whole set backing up in a much larger queue.<vspace
+                  blankLines="1"/>In the Linux reference implementation of TCP
+                  Prague, IW pacing can be optionally enabled, but it is off
+                  by default, because it is yet to be fully evaluated. It
+                  currently paces IW over half the initial smoothed round trip
+                  time (SRTT) measured during the handshake. SRTT is halved
+                  because the RTT often reduces after the initial handshake.
+                  For example: i) some CDNs move the flow to a closer server
+                  after establishment; ii) the initial RTT from a server can
+                  include the time to wake a sleeping handset battery; iii)
+                  some uplink technologies take a link-level round trip to
+                  request a scheduling slot.<vspace blankLines="1"/>It is
+                  planned to exploit any cached knowledge of the path RTT to
+                  improve the initial estimate, for instance using the Linux
+                  per-destination cache. it is also planned to allow the
+                  application to give an RTT hint (by setting
+                  sk_max_pacing_rate in Linux) if the developer has reason to
+                  believe that the application has a better estimate.</t>
+
+                  <t hangText="Exiting slow start more gracefully:">In the
+                  wide area Internet (in contrast to data centres), bottleneck
+                  access links tend to have much less capacity than the line
+                  rate of the sender. With a shallow immediate ECN threshold
+                  at this bottleneck, the slightest burst can tend to induce
+                  an ECN mark, which traditionally causes slow start to exit.
+                  A more gradual exit is being investigated for a Prague CC
+                  using the extent of marking, not just the existence of a
+                  single mark. This will be more consistent with the
+                  extent-based marking that scalable congestion controls use
+                  during congestion avoidance. Delay measurements (similar to
+                  Hystart++ <xref target="I-D.ietf-tcpm-hystartplusplus"/>)
+                  can also be used to complement the ECN signals.</t>
+                </list></t>
+
+              <t hangText="Paced Chirping:">In this approach, the aim is to
+              both increase more rapidly than exponential slow-start and to
+              greatly reduce any overshoot. It is primarily a delay-based
+              approach, but the aim is also to exploit ECN signals when
+              present (while not forgetting loss either). Therefore Paced
+              Chirping is generally usable for any congestion control - not
+              solely for Prague CC and L4S.<vspace blankLines="1"/>Instead of
+              only aiming to detect capacity overshoot at the end of
+              flow-start, brief trains of rapidly decreasing inter-packet
+              spacing called chirps are used to test many rates with as few
+              packets and as little load as possible. A full description is
+              beyond the scope of this document. <xref
+              target="LinuxPacedChirping"/> introduces the concepts and the
+              code as well as citing the main papers on Paced Chirping.<vspace
+              blankLines="1"/>Paced chirping works well over continuous links
+              such as Ethernet and DSL. But better averaging and noise
+              filtering are necessary over discontinuous link technologies
+              such as WiFi, LTE cellular radio, passive optical networks (PON)
+              and data over cable (DOCSIS). This is the current focus of this
+              work.<vspace blankLines="1"/>The current Linux implementation of
+              TCP Prague does not include Paced Chirping, but research code is
+              available separately in Linux and ns3. it is accessible via the
+              L4S landing page <xref target="L4S-home"/>.</t>
+            </list></t>
         </section>
 
         <section anchor="pracc_faster_ai"
                  title="Faster than Additive Increase">
-          <t>{ToDo:} Exploiting the invariant frequent congestion signal to
-          rapidly detect when available capacity has appeared, and to start
-          probing for the new operating point, e.g. using paced chirps (see
-          S.3.2.3 of <xref target="PragueLinux"/>).</t>
+          <t>The Prague CC has a startup phase and congestion avoidance phase
+          like traditional CCs. In steady-state during congestion avoidance,
+          like all scalable congestion controls, it induces frequent ECN
+          marks, with the same average recovery time between ECN marks, no
+          matter how much the flow rate scales. </t>
+
+          <t>If available capacity suddenly increases, e.g. other flow(s)
+          depart or the link capacity increases, these regular ECN marks will
+          stop. Therefore after a few rounds of silence (no ECN marks) in
+          congestion avoidance phase, the Prague CC can assume that available
+          capacity has increased, and switch to using the techniques from its
+          startup phase (<xref target="pracc_flow_start_future"/>) to rapidly
+          find the new, faster operating point. Then it can shift back into
+          its congestion avoidance behaviour.</t>
+
+          <t>That is the theory. But, as explained in <xref
+          target="pracc_flow_start_future"/>, the startup techniques,
+          specifically paced chirping, are still being developed for
+          discontinuous link types. Once the startup behaviour is available,
+          the Linux implementation of the Prague CC will also have a faster
+          than additive increase behaviour. S.3.2.3 of <xref
+          target="PragueLinux"/>) gives a brief preview of the performance of
+          this approach over an Ethernet link type in ns3.</t>
         </section>
 
         <section anchor="pracc_faster_response"
                  title="Remove Lag in Congestion Response">
-          <t>{ToDo: stitch this text in: As well as the inherent round trip of
-          feedback delay, it introduces another round trip of delay while the
-          Prague CC measures frac, before it can even start to respond to a
-          change in congestion. And then the EWMA adds further rounds of
-          sluggishness. Also mention invariant scale of moving average.}</t>
+          <t>To keep queuing delay low, new flows can only push in fast if
+          established flows yield fast. It has recently been realized that the
+          design of the Prague EWMA and congestion response introduces 1-2
+          rounds of lag (on top of the inherent round of feedback delay due to
+          the speed of light). These lags were inherited from the design of
+          DCTCP (see <xref target="pracc_moving_avg"/> and <xref
+          target="pracc_MD"/>), where a couple of extra hundred microseconds
+          was less noticeable. But congestion control in the wide area
+          Internet cannot afford up to 2 rounds trips of extra lag.</t>
 
-          <t>Removing the 1-2 rounds of unnecessary lag in DCTCP's feedback
-          processing, to yield more rapidly when new flows enter the system,
-          in order to enable faster convergence without the new flow having to
-          push up queuing <xref target="PerAckEWMA"/>.</t>
+          <t>To be clear, lag means delay before any response at all starts.
+          That is qualititatively different from the smoothing gain of an
+          EWMA, which /reduces/ the response by the gain factor (1/16 by
+          default) in case a change in congestion does not persist. Smoothing
+          gain can always be increased. But 1-2 rounds of lag means that, when
+          a new flow tries to push in, the sender of an established flow will
+          not respond /at all/ for 1-2 rounds after it first receives
+          congestion feedback.</t>
 
-          <t>Traditionally, TCP suppressed further response to congestion for
-          a round trip because it had already triggered a large reduction
-          (halving) at the first sign of congestion. DCTCP inherited the round
-          trip of suppression, but not the large reduction.</t>
+          <t>The Prague CC spends the first round trip of this lag gathering
+          feedback to measure frac before it is input into the EWMA algorithm
+          (see <xref target="pracc_moving_avg"/>). Then there is up to one
+          further round of delay because the implementations of DCTCP and
+          Prague did not fully adopt the paradigm shift to extent-based
+          marking - the timing of the decrease is still based on Reno. </t>
+
+          <t>Both Reno and DCTCP/Prague respond immediately on the first sign
+          of congestion. Reno's response is large, so it waits a round in CWR
+          state to allow the response to take effect. DCTCP's response is tiny
+          (extent-based), but then it still waits a round in CWR state. So it
+          does next-to-nothing for a round.</t>
+
+          <t>New EWMA and resposne algorithms to remove these 1-2 extra rounds
+          of lag are described in <xref target="PerAckEWMA"/>. They have been
+          implemented in Linux and an iterative process of evaluation and
+          redesign is in progress. The EWMA is updated per-ACK, but it still
+          changes as if it is clocked per round trip. The congestion response
+          is still triggered by the first indication of ECN feedback, but it
+          proceeds over the subsequent round trip so that it can take into
+          account further incoming feedback as the EWMA evolves. The reduction
+          is applied per-ACK but sized to result as if it had been a single
+          response per round trip, </t>
         </section>
       </section>
 
@@ -932,6 +1060,8 @@ RTT_ref is /not/ used for:
 
       <?rfc include='reference.RFC.6679'?>
 
+      <?rfc include='reference.RFC.6928'?>
+
       <?rfc include='reference.RFC.7567'?>
 
       <?rfc include='reference.RFC.8033'?>
@@ -945,32 +1075,6 @@ RTT_ref is /not/ used for:
       <?rfc include='reference.RFC.8290'?>
 
       <?rfc include='reference.RFC.8312'?>
-
-      <reference anchor="ARED01" target="http://www.icir.org/floyd/red.html">
-        <front>
-          <title>Adaptive RED: An Algorithm for Increasing the Robustness of
-          RED's Active Queue Management</title>
-
-          <author fullname="Sally Floyd" initials="S." surname="Floyd">
-            <organization>ACIRI</organization>
-          </author>
-
-          <author fullname="Ramakrishna Gummadi" initials="R."
-                  surname="Gummadi">
-            <organization>ACIRI</organization>
-          </author>
-
-          <author fullname="S. Shenker" initials="S." surname="Shenker">
-            <organization>ACIRI</organization>
-          </author>
-
-          <date month="August" year="2001"/>
-        </front>
-
-        <seriesInfo name="ACIRI Technical Report" value=""/>
-
-        <format target="http://www.icir.org/floyd/red.html" type="PDF"/>
-      </reference>
 
       <?rfc include='reference.I-D.ietf-tsvwg-l4s-arch'?>
 
@@ -989,6 +1093,8 @@ RTT_ref is /not/ used for:
       <?rfc include='reference.I-D.ietf-tcpm-generalized-ecn'?>
 
       <?rfc include='reference.I-D.ietf-quic-transport'?>
+
+      <?rfc include='reference.I-D.ietf-tcpm-hystartplusplus'?>
 
       <reference anchor="BBRv1"
                  target="https://tools.ietf.org/html/draft-cardwell-iccrg-bbr-congestion-control-00">
@@ -1073,39 +1179,6 @@ RTT_ref is /not/ used for:
                 type="PDF"/>
       </reference>
 
-      <reference anchor="PI2"
-                 target="https://riteproject.files.wordpress.com/2015/10/pi2_conext.pdf">
-        <front>
-          <title>PI2: A Linearized AQM for both Classic and Scalable
-          TCP</title>
-
-          <author fullname="Koen De Schepper" initials="K."
-                  surname="De Schepper">
-            <organization>Nokia Bell Labs</organization>
-          </author>
-
-          <author fullname="Olga Bondarenko" initials="O."
-                  surname="Bondarenko">
-            <organization>Simula Research Lab</organization>
-          </author>
-
-          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
-            <organization>BT</organization>
-          </author>
-
-          <author fullname="Ing-jyh Tsang" initials="I." surname="Tsang">
-            <organization>Nokia Bell Labs</organization>
-          </author>
-
-          <date month="December" year="2016"/>
-        </front>
-
-        <seriesInfo name="ACM CoNEXT'16" value=""/>
-
-        <format target="https://riteproject.files.wordpress.com/2015/10/pi2_conext.pdf"
-                type="PDF"/>
-      </reference>
-
       <reference anchor="L4Sdemo16"
                  target="http://dl.acm.org/citation.cfm?doid=2910017.2910633 (videos of demos: https://riteproject.eu/dctth/#1511dispatchwg )">
         <front>
@@ -1159,113 +1232,6 @@ RTT_ref is /not/ used for:
                 type="PDF"/>
       </reference>
 -->
-
-      <reference anchor="CRED_Insights"
-                 target="https://arxiv.org/abs/1904.07339">
-        <front>
-          <title>Insights from Curvy RED (Random Early Detection)</title>
-
-          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
-            <organization>BT</organization>
-          </author>
-
-          <date day="" month="July" year="2015"/>
-        </front>
-
-        <seriesInfo name="BT Technical Report"
-                    value="TR-TUB8-2015-003 arXiv:1904.07339 [cs.NI]"/>
-
-        <format target="https://arxiv.org/pdf/1904.07339" type="PDF"/>
-      </reference>
-
-      <reference anchor="CoDel"
-                 target="http://queue.acm.org/issuedetail.cfm?issue=2208917">
-        <front>
-          <title>Controlling Queue Delay</title>
-
-          <author fullname="Kathleen Nichols" initials="K." surname="Nichols">
-            <organization>PARC</organization>
-          </author>
-
-          <author fullname="Van Jacobson" initials="V." surname="Jacobson">
-            <organization>Pollere Inc</organization>
-          </author>
-
-          <date month="May" year="2012"/>
-        </front>
-
-        <seriesInfo name="ACM Queue" value="10(5)"/>
-
-        <format target="http://queue.acm.org/issuedetail.cfm?issue=2208917"
-                type="HTML"/>
-      </reference>
-
-      <reference anchor="MEDF">
-        <front>
-          <title>MEDF - a simple scheduling algorithm for two real-time
-          transport service classes with application in the UTRAN</title>
-
-          <author fullname="Michael Menth " initials="M." surname="Menth">
-            <organization>University of Wuerzburg</organization>
-          </author>
-
-          <author fullname="Matthias Schmid " initials="M." surname="Schmid">
-            <organization>Infosim AG</organization>
-          </author>
-
-          <author fullname="Herbert Heiss" initials="H." surname="Heiss">
-            <organization>Siemens</organization>
-          </author>
-
-          <author fullname="Thomas Reim" initials="T." surname="Reim">
-            <organization>Siemens</organization>
-          </author>
-
-          <date month="March" year="2003"/>
-        </front>
-
-        <seriesInfo name="Proc. IEEE Conference on Computer Communications (INFOCOM'03)"
-                    value="Vol.2 pp.1116-1122"/>
-
-        <format target="http://infocom2003.ieee-infocom.org/papers/27_04.PDF"
-                type="PDF"/>
-      </reference>
-
-      <reference anchor="DualQ-Test">
-        <front>
-          <title>Destruction Testing: Ultra-Low Delay using Dual Queue Coupled
-          Active Queue Management</title>
-
-          <author fullname="Henrik Steen" initials="H." surname="Steen">
-            <organization>Uni Oslo</organization>
-          </author>
-
-          <date month="May" year="2017"/>
-        </front>
-
-        <seriesInfo name="Masters Thesis, Dept of Informatics, Uni Oslo"
-                    value=""/>
-
-        <format target="https://www.duo.uio.no/bitstream/handle/10852/57424/thesis-henrste.pdf?sequence=1"
-                type="PDF"/>
-      </reference>
-
-      <reference anchor="SigQ-Dyn" target="https://arxiv.org/abs/1904.07044">
-        <front>
-          <title>Rapid Signalling of Queue Dynamics</title>
-
-          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
-            <organization/>
-          </author>
-
-          <date month="September" year="2017"/>
-        </front>
-
-        <seriesInfo name="Technical Report"
-                    value="TR-BB-2017-001 arXiv:1904.07044 [cs.NI]"/>
-
-        <format target="https://arxiv.org/pdf/1904.07044" type="PDF"/>
-      </reference>
 
       <reference anchor="Alizadeh-stability"
                  target="https://dl.acm.org/citation.cfm?id=1993753">
@@ -1332,110 +1298,6 @@ RTT_ref is /not/ used for:
 
         <format target="https://www.files.netdevconf.org/f/4d6939d5f1fb404fafd1/?dl=1"
                 type="PDF"/>
-      </reference>
-
-      <reference anchor="DualPI2Linux"
-                 target="https://www.netdevconf.org/0x13/session.html?talk-DUALPI2-AQM">
-        <front>
-          <title>DUALPI2 - Low Latency, Low Loss and Scalable (L4S)
-          AQM</title>
-
-          <author fullname="Olga Albisser" initials="O." surname="Albisser">
-            <organization>Simula Research Lab</organization>
-          </author>
-
-          <author fullname="Koen De Schepper" initials="K."
-                  surname="De Schepper">
-            <organization>Nokia Bell Labs</organization>
-          </author>
-
-          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
-            <organization>Independent</organization>
-          </author>
-
-          <author fullname="Olivier Tilmans" initials="O." surname="Tilmans">
-            <organization>Nokia Bell Labs</organization>
-          </author>
-
-          <author fullname="Henrik Steen" initials="H." surname="Steen">
-            <organization>Simula Research Lab</organization>
-          </author>
-
-          <date month="March" year="2019"/>
-        </front>
-
-        <seriesInfo name="Proc. Linux Netdev 0x13" value=""/>
-
-        <format target="https://www.files.netdevconf.org/f/febbe8c6a05b4ceab641/?dl=1"
-                type="PDF"/>
-      </reference>
-
-      <reference anchor="DOCSIS3.1"
-                 target="https://specification-search.cablelabs.com/CM-SP-MULPIv3.1">
-        <front>
-          <title>MAC and Upper Layer Protocols Interface (MULPI)
-          Specification, CM-SP-MULPIv3.1</title>
-
-          <author fullname="" surname="">
-            <organization>CableLabs</organization>
-          </author>
-
-          <date day="21" month="January" year="2019"/>
-        </front>
-
-        <seriesInfo name="Data-Over-Cable Service Interface Specifications DOCSIS&reg; 3.1"
-                    value="Version i17 or later"/>
-
-        <format target="https://specification-search.cablelabs.com/CM-SP-MULPIv3.1"
-                type="PDF"/>
-      </reference>
-
-      <reference anchor="LLD"
-                 target="https://cablela.bs/low-latency-docsis-technology-overview-february-2019">
-        <front>
-          <title>Low Latency DOCSIS: Technology Overview</title>
-
-          <author fullname="Greg White" initials="G." surname="White">
-            <organization>CableLabs</organization>
-          </author>
-
-          <author fullname="Karthik Sundaresan" initials="K."
-                  surname="Sundaresan">
-            <organization>CableLabs</organization>
-          </author>
-
-          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
-            <organization>CableLabs</organization>
-          </author>
-
-          <date day="" month="February" year="2019"/>
-        </front>
-
-        <seriesInfo name="CableLabs White Paper" value=""/>
-
-        <format target="https://cablela.bs/low-latency-docsis-technology-overview-february-2019"
-                type="PDF"/>
-      </reference>
-
-      <reference anchor="AQMmetrics"
-                 target="https://www.cs.purdue.edu/homes/fahmy/papers/ldc.pdf">
-        <front>
-          <title>A Comparison of Load-based and Queue- based Active Queue
-          Management Algorithms</title>
-
-          <author fullname="Minseok Kwon" initials="M." surname="Kwon">
-            <organization>Purdue Uni</organization>
-          </author>
-
-          <author fullname="Sonia Fahmy" initials="S." surname="Fahmy">
-            <organization>Purdue Uni</organization>
-          </author>
-
-          <date year="2002"/>
-        </front>
-
-        <seriesInfo name="Proc. Int'l Soc. for Optical Engineering (SPIE)"
-                    value="4866:35--46 DOI: 10.1117/12.473021"/>
       </reference>
 
       <reference anchor="PerAckEWMA" target="https://arxiv.org/abs/2101.07727">
@@ -1514,6 +1376,42 @@ RTT_ref is /not/ used for:
                     value="TR-CS-2016-001; arXiv:1904.07605"/>
 
         <format target="https://arxiv.org/pdf/1904.07605" type="PDF"/>
+      </reference>
+
+      <reference anchor="L4S-home" target="https://riteproject.eu/dctth/">
+        <front>
+          <title>L4S: Ultra-Low Queuing Delay for All</title>
+
+          <author>
+            <organization/>
+          </author>
+
+          <date day="" month="" year=""/>
+        </front>
+
+        <format target="https://riteproject.eu/dctth/" type="HTML"/>
+      </reference>
+
+      <reference anchor="LinuxPacedChirping"
+                 target="https://www.netdevconf.org/0x13/session.html?talk-chirp">
+        <front>
+          <title>Paced Chirping - Rethinking TCP start-up</title>
+
+          <author fullname="Joakim Misund" initials="J." surname="Misund">
+            <organization>University of Oslo</organization>
+          </author>
+
+          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
+            <organization>Independent</organization>
+          </author>
+
+          <date month="March" year="2019"/>
+        </front>
+
+        <seriesInfo name="Proc. Linux Netdev 0x13" value=""/>
+
+        <format target="https://www.files.netdevconf.info/f/da8cc04a608a448f890e/?dl=1"
+                type="PDF"/>
       </reference>
     </references>
 
