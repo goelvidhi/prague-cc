@@ -109,7 +109,7 @@
       </address>
     </author>
 
-    <date month="" year="2020"/>
+    <date month="" year=""/>
 
     <area>IRTF</area>
 
@@ -234,7 +234,9 @@
             codepoints of the 2-bit IP-ECN field are as defined in <xref
             target="RFC3168"/>: Not ECT, ECT(0), ECT(1) and CE, where ECT
             stands for ECN-Capable Transport and CE stands for Congestion
-            Experienced.</t>
+            Experienced.<vspace blankLines="1"/>A packet marked with the CE
+            codepoint is termed 'ECN-marked' or sometimes just 'marked' where
+            the context makes ECN obvious.</t>
 
             <t hangText="CC:">Congestion Control</t>
 
@@ -303,14 +305,13 @@
     </section>
 
     <section title="DCTCP: Brief Recap">
-      <t>{ToDo} Is this needed? Can't we just refer to the DCTCP RFC if
-      interested? We will anyway axplain all aspects? or not?</t>
+      <t>{ToDo} Is this needed? Can't we just refer to the DCTCP RFC <xref
+      target="RFC8257"/> if interested? We will anyway axplain all aspects? or
+      not?</t>
     </section>
 
     <section anchor="pracc_prague_cc" title="Prague Congestion Control">
-      <t>{ToDo: In each subsection, change "This section addresses Req 4.1.
-      [xref-ecn-l4s-id]." to a parenthesis after a (probably pre-existing)
-      sentence that describes the requirement.}</t>
+      <t/>
 
       <section anchor="pracc_pkt_id" title="Packet Identification">
         <t>On the public Internet, a sender using the Prague CC MUST set the
@@ -399,7 +400,9 @@
             target="RFC6679"/>, which is sufficient for the Prague CC.
             However, it is preferable to use the most recent improvements to
             ECN feedback in <xref
-            target="I-D.ietf-avtcore-cc-feedback-message"/>.</t>
+            target="I-D.ietf-avtcore-cc-feedback-message"/>, as used in the
+            implementation of the L4S variant of SCReAM <xref
+            target="RFC8298"/>.</t>
           </section>
         </section>
 
@@ -774,6 +777,8 @@ RTT_ref is /not/ used for:
       </section>
     </section>
 
+    <!--ToDo: RFC5033 lists subjects that the spec of an alternative CC should cover.-->
+
     <section anchor="pracc_future_work" title="Variants and Future Work">
       <t/>
 
@@ -1055,7 +1060,8 @@ RTT_ref is /not/ used for:
         unverified) impact on latency overshoot and responsiveness.</t>
       </section>
 
-      <section title="Scaling Down to Fractional Windows">
+      <section anchor="pracc_fractional_windows"
+               title="Scaling Down to Fractional Windows">
         <t>A modification to v5.0 of the Linux TCP stack that scales down to
         sub-packet windows is available for research purposes via the L4S
         landing page <xref target="L4S-home"/>. The L4S Prague Requirements in
@@ -1087,46 +1093,41 @@ RTT_ref is /not/ used for:
 
     <section anchor="pracc_Security_Considerations"
              title="Security Considerations">
-      <t>{ToDo: mention minimum window as a protection against unresponsive
-      flows; and requirement to be responsive and minimize queuing delay
-      [xref-l4s-arch]}</t>
+      <t><xref target="pracc_fractional_windows"/> on scaling down to
+      fractional windows discusses the tradeoff in becoming unresponsive at a
+      minium window, which causes a queue to build (harm to self and to
+      others) but protects oneself against other unresponsive flows (whether
+      malicious or accidental).</t>
+
+      <t>This draft inherits the security considerations discussed in <xref
+      target="I-D.ietf-tsvwg-ecn-l4s-id"/> and in the L4S architecture <xref
+      target="I-D.ietf-tsvwg-l4s-arch"/>. In particular, the self-interest
+      incentive to be responsive and minimize queuing delay, and protections
+      against those interested in disrupting the low queuing delay of
+      others.</t>
     </section>
 
     <section title="Acknowledgements">
-      <t>{ToDo} Tom Henderson, Olga Albisser, Joakim Misund.</t>
-
-      <t>The early contributions of Koen De Schepper, Bob Briscoe and Olga
-      Bondarenko were part-funded by the European Community under its Seventh
-      Framework Programme through the Reducing Internet Transport Latency
-      (RITE) project (ICT-317700). Bob Briscoe's contribution was also
-      part-funded by the Comcast Innovation Fund and the Research Council of
-      Norway through the TimeIn project. The views expressed here are solely
-      those of the authors.</t>
+      <t>Bob Briscoe's contribution was part-funded by the Comcast Innovation
+      Fund. The views expressed here are solely those of the authors.</t>
     </section>
 
     <section title="Contributors">
-      <t>{ToDo (this is just copied from dualq at the mo)}</t>
-
       <t>The following contributed implementations and evaluations that
       validated and helped to improve this specification:<list style="empty">
-          <t>Olga Albisser &lt;olga@albisser.org&gt; of Simula Research Lab,
-          Norway (Olga Bondarenko during early drafts) implemented the
-          prototype DualPI2 AQM for Linux with Koen De Schepper and conducted
-          extensive evaluations as well as implementing the live performance
-          visualization GUI <xref target="L4Sdemo16"/>.</t>
-
           <t>Olivier Tilmans &lt;olivier.tilmans@nokia-bell-labs.com&gt; of
-          Nokia Bell Labs, Belgium prepared and maintains the Linux
-          implementation of DualPI2 for upstreaming.</t>
+          Nokia Bell Labs, Belgium, prepared and maintains the Linux
+          implementation of TCP Prague.</t>
 
-          <t>Tom Henderson &lt;tomh@tomh.org&gt; of CableLabs, US implemented
-          various DualQ Coupled AQMs for ns3, including DualPI2 and DualPIE
-          over point to point and DOCSIS 3.1 link models and conducted
-          extensive evaluations.</t>
+          <t>Koen De Schepper &lt;koen.de_schepper@nokia-bell-labs.com&gt; of
+          Nokia Bell Labs, Belgium, contributed to the Linux implementation of
+          TCP Prague.</t>
 
-          <t>Ing Jyh (Inton) Tsang of Nokia, Belgium built the End-to-End Data
-          Centre to the Home broadband testbed on which DualQ Coupled AQM
-          implementations were tested.</t>
+          <t>Joakim Misund &lt;joakim.misund@gmail.com&gt; of Uni Oslo,
+          Norway, wrote the Linux paced chirping code.</t>
+
+          <t>Asad Sajjad Ahmed &lt;me@asadsa.com&gt;, Independent, Norway,
+          wrote the Linux code that maintains a sub-packet window.</t>
         </list></t>
     </section>
   </middle>
@@ -1134,7 +1135,7 @@ RTT_ref is /not/ used for:
   <!--  *****BACK MATTER ***** -->
 
   <back>
-    <references title="Normative References {ToDo}">
+    <references title="Normative References">
       <?rfc include='reference.RFC.2119'?>
 
       <?rfc include='reference.RFC.3168'?>
@@ -1142,15 +1143,11 @@ RTT_ref is /not/ used for:
       <?rfc include='reference.RFC.8311'?>
 
       <?rfc include='reference.I-D.ietf-tsvwg-ecn-l4s-id'?>
+
+      <?rfc include='reference.I-D.ietf-tcpm-accurate-ecn'?>
     </references>
 
-    <references title="Informative References {ToDo}">
-      <?rfc include='reference.RFC.0970'?>
-
-      <?rfc include='reference.RFC.2309'?>
-
-      <?rfc include='reference.RFC.3246'?>
-
+    <references title="Informative References">
       <?rfc include='reference.RFC.3649'?>
 
       <?rfc include='reference.RFC.4340'?>
@@ -1159,210 +1156,29 @@ RTT_ref is /not/ used for:
 
       <?rfc include='reference.RFC.5033'?>
 
-      <?rfc include='reference.RFC.5348'?>
-
       <?rfc include='reference.RFC.5681'?>
-
-      <?rfc include='reference.RFC.5706'?>
 
       <?rfc include='reference.RFC.6679'?>
 
       <?rfc include='reference.RFC.6928'?>
 
-      <?rfc include='reference.RFC.7567'?>
-
-      <?rfc include='reference.RFC.8033'?>
-
-      <?rfc include='reference.RFC.8034'?>
-
       <?rfc include='reference.RFC.8257'?>
 
       <?rfc include='reference.RFC.8298'?>
-
-      <?rfc include='reference.RFC.8290'?>
-
-      <?rfc include='reference.RFC.8312'?>
 
       <?rfc include='reference.I-D.ietf-tsvwg-l4s-arch'?>
 
       <?rfc include='reference.I-D.ietf-tsvwg-aqm-dualq-coupled'?>
 
-      <?rfc include='reference.I-D.ietf-tsvwg-nqb'?>
-
-      <?rfc include='reference.I-D.briscoe-tsvwg-l4s-diffserv'?>
-
-      <?rfc include='reference.I-D.briscoe-docsis-q-protection'?>
-
       <?rfc include='reference.I-D.ietf-avtcore-cc-feedback-message'?>
 
       <?rfc include='reference.I-D.ietf-tcpm-rack'?>
-
-      <?rfc include='reference.I-D.ietf-tcpm-accurate-ecn'?>
 
       <?rfc include='reference.I-D.ietf-tcpm-generalized-ecn'?>
 
       <?rfc include='reference.I-D.ietf-quic-transport'?>
 
       <?rfc include='reference.I-D.ietf-tcpm-hystartplusplus'?>
-
-      <reference anchor="BBRv1"
-                 target="https://tools.ietf.org/html/draft-cardwell-iccrg-bbr-congestion-control-00">
-        <front>
-          <title>BBR Congestion Control</title>
-
-          <author fullname="Neal Cardwell" initials="N." surname="Cardwell">
-            <organization>Google</organization>
-          </author>
-
-          <author fullname="Yuchung Cheng" initials="Y." surname="Cheng">
-            <organization>Google</organization>
-          </author>
-
-          <author fullname="Soheil Hassas Yeganeh" initials="S. "
-                  surname="Hassas Yeganeh">
-            <organization>Google</organization>
-          </author>
-
-          <author fullname="Van Jacobson" initials="V." surname="Jacobson">
-            <organization>Google</organization>
-          </author>
-
-          <date month="July" year="2017"/>
-        </front>
-
-        <seriesInfo name="Internet Draft"
-                    value="draft-cardwell-iccrg-bbr-congestion-control-00"/>
-
-        <format target="https://tools.ietf.org/html/draft-cardwell-iccrg-bbr-congestion-control-00"
-                type="HTML"/>
-      </reference>
-
-      <reference anchor="Mathis09"
-                 target="http://www.hpcc.jp/pfldnet2009/Program_files/1569198525.pdf">
-        <front>
-          <title>Relentless Congestion Control</title>
-
-          <author fullname="Matt Mathis" initials="M." surname="Mathis">
-            <organization>PSC</organization>
-          </author>
-
-          <date month="May" year="2009"/>
-        </front>
-
-        <seriesInfo name="PFLDNeT'09" value=""/>
-
-        <format target="http://www.hpcc.jp/pfldnet2009/Program_files/1569198525.pdf"
-                type="PDF"/>
-      </reference>
-
-      <!--{ToDo: DCttH ref will need to be updated, once stable}-->
-
-      <reference anchor="DCttH15" target="http://riteproject.eu/publications/">
-        <front>
-          <title>`Data Centre to the Home': Ultra-Low Latency for All</title>
-
-          <author fullname="Koen De Schepper" initials="K."
-                  surname="De Schepper">
-            <organization>Nokia Bell Labs</organization>
-          </author>
-
-          <author fullname="Olga Bondarenko" initials="O."
-                  surname="Bondarenko">
-            <organization>Simula Research Lab</organization>
-          </author>
-
-          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
-            <organization>BT</organization>
-          </author>
-
-          <author fullname="Ing-jyh Tsang" initials="I." surname="Tsang">
-            <organization>Nokia Bell Labs</organization>
-          </author>
-
-          <date year="2015"/>
-        </front>
-
-        <seriesInfo name="RITE project Technical Report" value=""/>
-
-        <format target="https://riteproject.files.wordpress.com/2019/06/dctth_preprint.pdf"
-                type="PDF"/>
-      </reference>
-
-      <reference anchor="L4Sdemo16"
-                 target="http://dl.acm.org/citation.cfm?doid=2910017.2910633 (videos of demos: https://riteproject.eu/dctth/#1511dispatchwg )">
-        <front>
-          <title>Ultra-Low Delay for All: Live Experience, Live
-          Analysis</title>
-
-          <author fullname="Olga Bondarenko" initials="O."
-                  surname="Bondarenko">
-            <organization>Simula Research Lab</organization>
-          </author>
-
-          <author fullname="Koen De Schepper" initials="K."
-                  surname="De Schepper">
-            <organization>Bell Labs</organization>
-          </author>
-
-          <author fullname="Ing-jyh Tsang" initials="I." surname="Tsang">
-            <organization>Bell Labs</organization>
-          </author>
-
-          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
-            <organization>BT</organization>
-          </author>
-
-          <date month="May" year="2016"/>
-        </front>
-
-        <seriesInfo name="Proc. MMSYS'16" value="pp33:1--33:4"/>
-
-        <format target="http://dl.acm.org/citation.cfm?doid=2910017.2910633"
-                type="PDF"/>
-      </reference>
-
-      <!--      <reference anchor="DCTCP_Pitfalls"
-                 target="http://blogs.usenix.org/conference/nsdi15/technical-sessions/presentation/judd">
-        <front>
-          <title>Attaining the Promise and Avoiding the Pitfalls of TCP in the
-          Datacenter</title>
-
-          <author fullname="Glenn Judd" initials="G." surname="Judd">
-            <organization>Morgan Stanley</organization>
-          </author>
-
-          <date month="May" year="2015"/>
-        </front>
-
-        <seriesInfo name="12th USENIX Symposium on Networked Systems Design and Implementation (NSDI 15)"
-                    value="145-157"/>
-
-        <format target="http://blogs.usenix.org/conference/nsdi15/technical-sessions/presentation/judd"
-                type="PDF"/>
-      </reference>
--->
-
-      <reference anchor="Alizadeh-stability"
-                 target="https://dl.acm.org/citation.cfm?id=1993753">
-        <front>
-          <title>Analysis of DCTCP: Stability, Convergence, and
-          Fairness</title>
-
-          <author fullname="Mohamed Alizadeh" initials="M." surname="Alizadeh"/>
-
-          <author fullname="Adel Javanmard" initials="A." surname="Javanmard"/>
-
-          <author fullname="Balaji Prabhakar" initials="B."
-                  surname="Prabhakar"/>
-
-          <date month="June" year="2011"/>
-        </front>
-
-        <seriesInfo name="ACM SIGMETRICS 2011" value=""/>
-
-        <format target="https://people.csail.mit.edu/alizadeh/papers/dctcp_analysis-sigmetrics11.pdf"
-                type="PDF"/>
-      </reference>
 
       <reference anchor="PragueLinux"
                  target="https://www.netdevconf.org/0x13/session.html?talk-tcp-prague-l4s">
