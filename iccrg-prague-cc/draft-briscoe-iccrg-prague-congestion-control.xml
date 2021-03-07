@@ -1019,7 +1019,8 @@ RTT_ref is /not/ used for:
         summarized here.</t>
       </section>
 
-      <section anchor="pracc_fuut" title="Further Reduced RTT-Dependence">
+      <section anchor="pracc_further_rtt_independence"
+               title="Further Reduced RTT-Dependence">
         <t>The algorithm to reduce RTT dependence is only relevant for
         long-running flows. So in the current TCP Prague implementation it
         remains disabled for a certain number of round trips after the start
