@@ -507,9 +507,9 @@
           long as the reductions due to ECN and the loss are Reno-friendly
           when taken together.</t>
 
-          <t>See <xref target="pracc_delay-based"/> for discussion of future
-          work on congestion control using a combination of delay, ECN and
-          loss.</t>
+          <t>See <xref target="pracc_combining_metrics"/> for discussion of
+          future work on congestion control using a combination of delay, ECN
+          and loss.</t>
 
           <t>Implementation note:<list style="hanging">
               <t hangText="DCTCP bug prior to v5.1:">A Prague CC cannot rely
@@ -939,10 +939,59 @@ RTT_ref is /not/ used for:
         </section>
       </section>
 
-      <section anchor="pracc_delay-based"
-               title="Combination of ECN-, Loss- and Delay-Based Control">
-        <t>{ToDo: Give algo for cobination of Loss and ECN. Integration
-        between Prague CC and BBRv2. }</t>
+      <section anchor="pracc_combining_metrics"
+               title="Combining Congestion Metrics">
+        <t>Ultimately, it would be preferable to take an integrated approach
+        and use a combination of ECN, loss and delay metrics to drive
+        congestion control. For instance, using a downward trend in ECN
+        marking and/or delay as a heuristic to temper the response to loss.
+        Such ideas are not in the immediate plans for the Linux TCP Prague,
+        but some more specific ideas are highlighted in the following
+        subsections.</t>
+
+        <section title="ECN with Loss">
+          <t>If the bottleneck is ECN-capable, a loss due to congestion is
+          very likely to have been preceded by a period of ECN marking. When
+          the current Linux TCP Prague CC detects a loss, like DCTCP, it
+          halves cwnd, even if it has already reduced cwnd in the same round
+          trip due to ECN marking. This double reduction can end up factoring
+          down cwnd to as little as 1/4 in one round trip.</t>
+
+          <t>On a loss while in CWR state following an ECN reduction, it would
+          be possible to factor down cwnd by 1/(2-alpha), which would compound
+          with the previous decrease factor of (1-alpha/2) to result in: (1 -
+          alpha/2) / (2-alpha)) = 1/2. In integer arithmetic, this division
+          would be possible but relatively expensive. A less expensive
+          alternative would be multiplication by (2+alpha)/4, which
+          approximates to a compounded decrease factor of 1/2 for typical low
+          values of alpha, even up to 30%. The compound decrease factor is
+          never greater than 1/2 and in the worst case, if alpha was 100%, it
+          would factor cwnd down by 3/8.</t>
+        </section>
+
+        <section title="ECN with Delay">
+          <t><xref target="pracc_faster_ai"/> described the plans to shift
+          between using ECN when close to the operating point and using delay
+          by injecting paced chirps to find a new operating after the ECN
+          signal goes silent for a few rounds. Paced chirping shifts more
+          slowly to the new operating point the more noise there is in the
+          delay measurements. Work is ongoing on treating any ECN marking as a
+          complementary metric. The resulting less noisy combined metric
+          should then allow the controller to shift more rapidly to each new
+          operating point.</t>
+
+          <t>An alternative would be to combine ECN with the BBR approach,
+          which induces a much less noisy delay signal by using less frequent
+          but more pronounced delay spikes. The approach currently being taken
+          is to adapt the chirp length to the degree of noise, so the chirps
+          only become longer and/or more pronounced when necessary, for
+          instance when faced with a discontinuous link technology such as
+          WiFi. With multiple chirps per round, the noise can still be
+          filtered out by averaging over them all, rather than trying to
+          remove noise from each spike. This keeps the 'self-harm' to the
+          minimum necessary, and ensures that capacity is always being
+          sampled, which removes the risk of going stale.</t>
+        </section>
       </section>
 
       <section title="Fall-Back on Classic ECN">
