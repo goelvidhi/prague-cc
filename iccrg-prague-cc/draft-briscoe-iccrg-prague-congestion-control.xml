@@ -281,7 +281,8 @@
     </section>
 
     <section anchor="pracc_l4s" title="Bigger Picture - L4S Overview">
-      <t/>
+      <t>{This section will be deleted. But it's left here for now to remind
+      me of things to say in the Introduction.}</t>
 
       <section title="Low Queuing Delay and High Utilization">
         <t>{ToDo: Copy largely from netdev Prague paper}</t>
@@ -305,7 +306,7 @@
     </section>
 
     <section title="DCTCP: Brief Recap">
-      <t>{ToDo} Is this needed? Can't we just refer to the DCTCP RFC <xref
+      <t>{ToDo} Prob not needed? Just refer to the DCTCP RFC <xref
       target="RFC8257"/> if interested? We will anyway axplain all aspects? or
       not?</t>
     </section>
