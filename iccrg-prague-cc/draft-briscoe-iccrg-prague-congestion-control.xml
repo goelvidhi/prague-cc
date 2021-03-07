@@ -1056,10 +1056,28 @@ RTT_ref is /not/ used for:
       </section>
 
       <section title="Scaling Down to Fractional Windows">
-        <t>This section addresses the 'Scaling to Low RTT' aspect of Req 4.3.
-        [xref-ecn-l4s-id].</t>
+        <t>A modification to v5.0 of the Linux TCP stack that scales down to
+        sub-packet windows is available for research purposes via the L4S
+        landing page <xref target="L4S-home"/>. The L4S Prague Requirements in
+        section 4.3 of <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/> recommend
+        but no longer mandate scaling down to sub-packet windows. This is
+        because becoming unresponsive at a minimum window is a tradeoff
+        between protecting against other unresponsive flows and the extra
+        queue you induce by becoming unresponsive yourself. So this code is
+        not maintained as part of the Linux implementation of TCP Prague.</t>
 
-        <t>{ToDo}</t>
+        <t>Firstly, the stack ahs to be modifed to maintain a fractional
+        congestion window. The because the ACK clock cannot work below 1
+        packet per RTT, the code sets the time to send each packet, then
+        readjusts the timing as each ACK arrives (otherwise any queuing
+        accumulates a burst in subsequent rounds). Also, additive increase of
+        one segment does not scale below a 1-segment window. So instead of a
+        constant additive increase, the code uses a logarithmically scaled
+        additive increase that slowly adapts the additive increase constant to
+        the slow start threshold. Despite these quite radical changes, the
+        diff is surprisingly small. The design and implementation is explained
+        in <xref target="Ahmed19"/>, which also includes evaluation
+        results.</t>
       </section>
     </section>
 
@@ -1469,7 +1487,7 @@ RTT_ref is /not/ used for:
         <format target="https://arxiv.org/pdf/1904.07605" type="PDF"/>
       </reference>
 
-      <reference anchor="L4S-home" target="https://riteproject.eu/dctth/">
+      <reference anchor="L4S-home" target="https://riteproject.eu/dctth/#code">
         <front>
           <title>L4S: Ultra-Low Queuing Delay for All</title>
 
@@ -1595,6 +1613,24 @@ RTT_ref is /not/ used for:
         <seriesInfo name="Proc. IEEE Infocom'04" value="4(2514--2524)"/>
 
         <format target="https://ieeexplore.ieee.org/document/1354672"
+                type="PDF"/>
+      </reference>
+
+      <reference anchor="Ahmed19"
+                 target="https://www.duo.uio.no/handle/10852/70966">
+        <front>
+          <title>Extending TCP for Low Round Trip Delay</title>
+
+          <author fullname="Asad Sajjad Ahmed" initials="A.S." surname="Ahmed">
+            <organization>Simula and Uni Oslo</organization>
+          </author>
+
+          <date month="August" year="2019"/>
+        </front>
+
+        <seriesInfo name="Masters Thesis, Uni Oslo" value=""/>
+
+        <format target="https://www.duo.uio.no/bitstream/handle/10852/70966/main.pdf?sequence=5&amp;isAllowed=y"
                 type="PDF"/>
       </reference>
     </references>
