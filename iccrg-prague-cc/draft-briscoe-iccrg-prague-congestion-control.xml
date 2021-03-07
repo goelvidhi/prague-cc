@@ -995,24 +995,63 @@ RTT_ref is /not/ used for:
       </section>
 
       <section title="Fall-Back on Classic ECN">
-        <t>This section addresses the 'Coexistence with Classic ECN' aspect of
-        Req 4.3. [xref-ecn-l4s-id].</t>
+        <t>The implementation of TCP Prague CC in Linux includes an algorithm
+        to detect a Classic ECN AQM and fall back to Reno as a result, as
+        required by the 'Coexistence with Classic ECN' aspect of the Prague
+        Req 4.3. <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>. </t>
 
-        <t>{ToDo}</t>
+        <t>The algorithm currently used (v2) is relatively simple, but rather
+        than describe it here, full rationale, pseudocode and explanation can
+        be found in the technical report about it <xref
+        target="ecn-fallback"/>. This also includes a selection of the
+        evaluation results and a link to visualizations of the full results
+        online. The current algorithm nearly always detects a Classic ECN AQM,
+        and in the majority of the wide range of scenarios tested it is good
+        at detecting an L4S AQM. However, it wrongly identifies and L4S AQM as
+        Classic in a significant minority of cases when the link rate is low,
+        or the RTT is high. The report gives ideas on how to improve detection
+        in these scenarios, but in the mean time the algorithm has been
+        disabled by default.</t>
+
+        <t>Recently, the report has been updated to include new ideas on other
+        ways to distinguish Classic from L4S AQMs. The interested reader can
+        access it themselves, so this living document will not be further
+        summarized here.</t>
       </section>
 
-      <section anchor="pracc_further_rtt_independence"
-               title="Further Reduced RTT-Dependence">
-        <t>{ToDo:}</t>
+      <section anchor="pracc_fuut" title="Further Reduced RTT-Dependence">
+        <t>The algorithm to reduce RTT dependence is only relevant for
+        long-running flows. So in the current TCP Prague implementation it
+        remains disabled for a certain number of round trips after the start
+        of a flow, as explained in <xref target="pracc_rtt_independence"/>. It
+        would be possible to make RTT_ref gradually move from the actual RTT
+        to the target reference RTT, or peerhaps depend on other parameters of
+        the flow. Nonetheless, just switching in the algorithm after a number
+        of rounds works well enough. It is planned to also disable the
+        algorithm for a similar duration if a flow becomes idle then restarts,
+        but this is yet to be evaluated.</t>
 
-        <t>An idle reset time can be added. {ToDo: to be verified...}</t>
+        <t>Prague Req 4.3. in <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>) only
+        requires reduced RTT bias "in the range between the minimum likely RTT
+        and typical RTTs expected in the intended deployment scenario". For
+        RTTs higher than typical, the RTT bias of the Prague CC is no worse
+        than that of Classic CCs, as long as the bottleneck has heeded the
+        recommendations to avoid using an on-off AQM.</t>
 
-        <t>RTT_ref could be a function of more than just RTT.</t>
+        <t>If a step AQM is used, the congestion episodes of flows with
+        different RTTs tend to synchronize. If two scalable CCs are allowed to
+        synchronize, the analysis in section IV of <xref target="BIC"/>
+        explains that RTT unfairness will approach infinity. </t>
 
-        <t>Similar for longer RTTs than RR, (RTT/RR)^2 segments would need to
-        be added per RR. The current Prague implementation does not support
-        this faster AI for RTTs longer than RR, due to expected (though never
-        evaluated) impact on latency overshoot and slowed responsiveness.</t>
+        <t>To prevent this, either step AQMs would have to be deprecated for
+        L4S (they are not the preferred recommendation in <xref
+        target="I-D.ietf-tsvwg-aqm-dualq-coupled"/>), or the reference RTT
+        approach of <xref target="pracc_rtt_independence"/> could be used for
+        higher than typical RTTs as well as lower. In this latter case,
+        (RTT/RTT_ref)^2 segments would need to be added to the window per
+        reference RTT. The current TCP Prague implementation does not support
+        this faster AI for RTTs higher than RTT_ref, due to the expected (but
+        unverified) impact on latency overshoot and responsiveness.</t>
       </section>
 
       <section title="Scaling Down to Fractional Windows">
@@ -1126,6 +1165,8 @@ RTT_ref is /not/ used for:
       <?rfc include='reference.RFC.8312'?>
 
       <?rfc include='reference.I-D.ietf-tsvwg-l4s-arch'?>
+
+      <?rfc include='reference.I-D.ietf-tsvwg-aqm-dualq-coupled'?>
 
       <?rfc include='reference.I-D.ietf-tsvwg-nqb'?>
 
@@ -1460,6 +1501,99 @@ RTT_ref is /not/ used for:
         <seriesInfo name="Proc. Linux Netdev 0x13" value=""/>
 
         <format target="https://www.files.netdevconf.info/f/da8cc04a608a448f890e/?dl=1"
+                type="PDF"/>
+      </reference>
+
+      <reference anchor="ecn-fallback"
+                 target="https://arxiv.org/abs/1911.00710">
+        <front>
+          <title>TCP Prague Fall-back on Detection of a Classic ECN
+          AQM</title>
+
+          <author fullname="Bob Briscoe" initials="B." surname="Briscoe">
+            <organization>Independent</organization>
+          </author>
+
+          <author fullname="Asad Sajjad Ahmed" initials="A.S." surname="Ahmed">
+            <organization>Simula and Uni Oslo</organization>
+          </author>
+
+          <date month="April" year="2020"/>
+        </front>
+
+        <seriesInfo name="bobbriscoe.net Technical Report"
+                    value="TR-BB-2019-002"/>
+
+        <format target="https://arxiv.org/abs/1911.00710" type="PDF"/>
+      </reference>
+
+      <reference anchor="BIC" target="DOI: 10.1109/INFCOM.2004.1354672">
+        <front>
+          <title>Binary Increase Congestion Control for Fast Long-Distance
+          Networks</title>
+
+          <author fullname="Lisong Xu" initials="L." surname="Xu">
+            <organization/>
+          </author>
+
+          <author fullname="Khaled Harfoush" initials="K." surname="Harfoush">
+            <organization/>
+
+            <address>
+              <postal>
+                <street/>
+
+                <city/>
+
+                <region/>
+
+                <code/>
+
+                <country/>
+              </postal>
+
+              <phone/>
+
+              <facsimile/>
+
+              <email/>
+
+              <uri/>
+            </address>
+          </author>
+
+          <author fullname="Injong Rhee" initials="I." surname="Rhee">
+            <organization/>
+
+            <address>
+              <postal>
+                <street/>
+
+                <city/>
+
+                <region/>
+
+                <code/>
+
+                <country/>
+              </postal>
+
+              <phone/>
+
+              <facsimile/>
+
+              <email/>
+
+              <uri/>
+            </address>
+          </author>
+
+          <date month="March" year="2004"/>
+        </front>
+
+        <seriesInfo name="Proc. IEEE Infocom'04" value="4(2514--2524)"/>
+
+        <format target="https://ieeexplore.ieee.org/document/1354672"
                 type="PDF"/>
       </reference>
     </references>
