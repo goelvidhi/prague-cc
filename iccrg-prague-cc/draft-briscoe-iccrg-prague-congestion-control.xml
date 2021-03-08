@@ -294,8 +294,14 @@
             'Prague L4S requirements').</t>
 
             <t hangText="Response function:">The relationship between the
-            window (cwnd or W) and the congestion signalling probability, p.
-            response function of a scalable congestion control is 1/p.</t>
+            window (cwnd) of a congestion control and the congestion
+            signalling probability, p, in steady state. A general response
+            function has the form cwnd = K/p^B, where K and B are constants.
+            In an approximation of the response function of the standard Reno
+            CC, B=1/2. For a scalable congestion control B=1, so its response
+            function takes the form cwnd = K/p. The number of congestion
+            signals per round is p*cwnd, which equates to the constant, K, for
+            a scalable CC. Hence the definition of a scalable CC above.</t>
 
             <t hangText="Reno-friendly:">The subset of Classic traffic that
             excludes unresponsive traffic and excludes experimental congestion
@@ -1473,11 +1479,12 @@ RTT_ref is /not/ used for:
       -->
     </references>
 
-    <section title="{ToDo}">
+    <!--
+<section title="{ToDo}">
       <t>Delete if not needed.</t>
     </section>
 
-    <!--    <section title="Open Issues">
+    <section title="Open Issues">
       <t>Minor open issues are tagged '{ToDo}' at the appropriate point in the
       document. Major open issues are listed below:<list>
           <t>None</t>
