@@ -226,13 +226,15 @@
         (see <xref target="pracc_fallback_ecn"/>). </t>
       </section>
 
-      <section anchor="pracc_roadmap" title="Document Purpose and Roadmap">
-        <t>{ToDo: Explain that there is not 'One True Prague CC'. L4S is
-        intended to enable development of any scalable CC that meets the
-        Prague requirements. This doc is only meant to describe a reference
-        implementation. It doesn't satisfy all the requirements, and the IETF
-        might decide that certain requirements need to be relaxed as an
-        outcome of the process of trying to satisfy them all.}</t>
+      <section anchor="pracc_roadmap" title="Document Purpose">
+        <t>There is not 'One True Prague CC'. L4S is intended to enable
+        development of any scalable CC that meets the L4S Prague requirements
+        <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>. This document attempts to
+        describe a reference implementation and attempts to generalize it to
+        different transports and OS platforms. The implementation does not
+        satisfy all the Prague requirements (yet), and the IETF might decide
+        that certain requirements need to be relaxed as an outcome of the
+        process of trying to satisfy them all.</t>
       </section>
 
       <section title="Maturity Status (To be Removed Before Publication)">
@@ -240,7 +242,7 @@
         However, there are areas of the Prague CC that are not yet even be
         complete. And in other implementations of the Prague CC, other areas
         are incomplete. In the Linux reference implementation of TCP Prague,
-        interim code is used in these incomplete areas. They are:<list
+        interim code is used in the incomplete areas, which are:<list
             style="symbols">
             <t>Flow start and restart (standard slow start is used, even
             though it often exits early in L4S environments were ECN marking
@@ -250,15 +252,13 @@
             used, which makes the flow particularly sluggish if it has dropped
             out of slow start early).</t>
           </list>The body of this document describes the Prague CC as
-        implemented (primarily in the Linux reference implementation, but also
-        notes on other implementations are sometimes given). Any non-default
-        options or any planned improvements are separated out into <xref
-        target="pracc_future_work"/> on "Variants and Future Work". As each of
-        the above areas is addressed, it will will be removed from this
-        section and its decription in the body of the document will be
-        updated. Once all areas are complete, this section will be removed.
-        Prague CC will then still be a work in progress, but only on a similar
-        footing as all other congestion controls.</t>
+        implemented. Any non-default options or any planned improvements are
+        separated out into <xref target="pracc_future_work"/> on "Variants and
+        Future Work". As each of the above areas is addressed, it will will be
+        removed from this section and its description in the body of the
+        document will be updated. Once all areas are complete, this section
+        will be removed. Prague CC will then still be a work in progress, but
+        only on a similar footing as all other congestion controls.</t>
       </section>
 
       <section anchor="pracc_Terminology" title="Terminology">
@@ -359,18 +359,14 @@
       </section>
     </section>
 
-    <section title="DCTCP: Brief Recap">
-      <t>{ToDo} Prob not needed? Just refer to the DCTCP RFC <xref
-      target="RFC8257"/> if interested? We will anyway explain all aspects? or
-      not?</t>
-    </section>
-
     <section anchor="pracc_prague_cc" title="Prague Congestion Control">
       <t/>
 
       <section anchor="pracc_Prague_L4S_reqs"
                title="The Prague L4S Requirements">
-        <t>{ToDo: Copy largely from netdev Prague paper}</t>
+        <t>{ToDo: Essentially give some context as to how the list came about
+        and just list the names of each requirement (adding recent ones like
+        pacing).}</t>
       </section>
 
       <section anchor="pracc_pkt_id" title="Packet Identification">
