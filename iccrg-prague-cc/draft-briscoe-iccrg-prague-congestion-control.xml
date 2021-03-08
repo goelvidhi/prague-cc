@@ -95,20 +95,6 @@
       </address>
     </author>
 
-    <author fullname="Asad Sajjad Ahmed" initials="A.S." surname="Ahmed">
-      <organization>Independent</organization>
-
-      <address>
-        <postal>
-          <street/>
-
-          <country>Norway</country>
-        </postal>
-
-        <email>me@asadsa.com</email>
-      </address>
-    </author>
-
     <date month="" year=""/>
 
     <area>IRTF</area>
@@ -120,17 +106,17 @@
     <keyword>I-D</keyword>
 
     <abstract>
-      <t>{ToDo, something like:} This Informational/experimental RFC describes
-      the Prague congestion control scheme, derived from DCTCP and adapted for
-      Internet traffic by fulfilling the L4S Prague requirements. It reuses
-      the DCTCP mechanisms to achieve high-burst tolerance, low latency, and
-      high throughput on L4S supporting network nodes. Prague TCP is intended
-      to be deployed on the Internet where it is compatible with TCP-Reno on
-      drop based bottlenecks (AQM, policers or taildrop) and with L4S network
-      support also on ECN based bottlenecks. Prague TCP can only achieve its
-      low latency and high throughput when its packets are marked with a
-      shallow ECN threshold and can only achieve its throughput fairness when
-      a Coupled or FQ AQM mechanism is in place. For Classic ECN bottlenecks
+      <t>{ToDo, something like:} This specification defines the Prague
+      congestion control scheme, derived from DCTCP and adapted for Internet
+      traffic by fulfilling the L4S Prague requirements. Over paths with L4S
+      support at the bottleneck, it reuses the DCTCP mechanisms to achieve low
+      latency and full throughput. The Prague CC is intended to be deployed
+      over the Internet where it is compatible with TCP-Reno on drop based
+      bottlenecks (AQM, policers or taildrop) and with L4S network support
+      also on ECN based bottlenecks. Prague TCP can only achieve its low
+      latency and high throughput when its packets are marked with a shallow
+      ECN threshold and can only achieve its throughput fairness when a
+      Coupled or FQ AQM mechanism is in place. For Classic ECN bottlenecks
       (RFC...) that are unaware of L4S, operators might want to apply
       additional measures to limit or avoid the higher throughput use of L4S
       Prague traffic. This memo presents the current state of the Linux Prague
@@ -141,7 +127,112 @@
 
   <middle>
     <section anchor="pracc_intro" title="Introduction">
-      <t>{ToDo: Copy largely from netdev Prague paper (not too elaborate)}</t>
+      <t>This document defines the Prague congestion control. It is defined
+      independent of any particular transport protocol or operating system,
+      but notes are added that highlight issues specific to certain transports
+      and OSs. The authors are most familiar with the reference implementation
+      of Prague on Linux over TCP. So that forms the basis of the large
+      majority of platform-specific notes. Nonetheless, wherever possible,
+      experience from implementers on other platforms is included, and the
+      intention is to gather more into this document during the drafting
+      process.</t>
+
+      <t>The Prague CC is intended to maintain consistently low queuing delay
+      over network paths that offer L4S support at the bottleneck. Where the
+      bottleneck does not support L4S, the Prague CC is intended to fall back
+      to behaving like a conventional 'Classic' congestion control. L4S stands
+      for Low Latency, Low Loss Scalable throughput. L4S support in the
+      network involves Active Queue Management (AQM) with a very shallow
+      target queueing delay (of the order of a millisecond) that applies
+      immediate Explicit Congestion Notification (ECN). 'Immediate ECN' means
+      that the network applies ECN marking based on the instantaneous queue,
+      without any smoothing or filtering, The Prague CC takes on the job of
+      smoothing and filtering the congestion signals from the network.</t>
+
+      <t>The Prague CC is a particular instance of a scalable congestion
+      control, which is defined in <xref target="pracc_Terminology"/>.
+      Scalable congestion control is the part of the L4S architecture that
+      does the actual work of maintaining low queuing delay and ensuring that
+      the delay and throughput properties scale with flow rate.</t>
+
+      <t>The L4S architecture <xref target="I-D.ietf-tsvwg-l4s-arch"/> places
+      the host congestion control in the context of the other parts of the
+      system. In particular the different types of L4S AQM in the network and
+      the ECT(1) codepoint in the IP-ECN field that conveys to the network
+      that the host supports the L4S form of ECN. The architecture document
+      also covers other issues such as: incremental deployment; protection of
+      low latency queues against accidental or malicious disruption; and the
+      relationship of L4S to other low latency technologies. The specfication
+      of the L4S ECN Protocol <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/> sets
+      down the requirements that the Prague CC has to follow (called the
+      Prague L4S Requirements).</t>
+
+      <t>Links to implementations of the Prague CC and other scalable
+      congestion controls (all open source) can be found via the L4S landing
+      page <xref target="L4S-home"/>, which also links to numerous other
+      L4S-related resources. A (slightly dated) paper on the specific
+      implementation of the Prague CC in Linux over TCP is also available
+      <xref target="PragueLinux"/>.</t>
+
+      <section anchor="pracc_motivation"
+               title="Motivation: Low Queuing Delay /and/ Full Throughput">
+        <t>The Prague CC is capable of keeping queuing delay consistently low
+        while fully utilizing available capacity. In contrast, Classic
+        congestion controls need to induce a reasonably large queue in order
+        to fully utilize capacity. Therefore, prior to scalable CCs like
+        Prague, it was believed that very low delay was only possible by
+        limiting throughput and isolating the low delay traffic from
+        capacity-seeking traffic. </t>
+
+        <t>The Prague CC uses additive increase multiplicative decrease
+        (AIMD), in which it increases its window until an ECN mark (or loss)
+        is detected, then yields in a continual sawtooth pattern. The key to
+        keeping queuing delay low without under-utilizing capacity is to keep
+        the sawteeth tiny. For example the average duration of a Prague CC
+        sawtooth is of the order of a round trip, whereas a classic congestion
+        control sawtooths over hundreds of round trips. </t>
+
+        <t>Keeping the sawtooth amplitude down, keeps queue variation down and
+        utilization up. Keeping the duration of the sawteeth down ensures
+        control remains tight. The definition of a scalable CC is that the
+        duration between congestion marks does not increase as flow rate
+        scales, all other factors being equal. This is important, because it
+        means that the sawteeth will always stay tiny. So queue delay will
+        remain very low, and control will remain very tight.</t>
+
+        <t>The tip of each sawtooth occurs when the bottleneck link emits a
+        congestion signal. Therefore such small sawteeth are only feasible
+        when ECN is used for the congestion signals. If loss were used, the
+        loss level would be prohibitively high. (This is why L4S-ECN has to
+        depart from the requirement of Classic ECN<xref target="RFC3168"/>
+        that an ECN mark is equivalent to a loss.)</t>
+
+        <t>The Prague CC is derived from Data Center TCP (DCTCP <xref
+        target="RFC8257"/>). DCTCP is confined to controlled environments like
+        data centres precisely because it uses such small sawteeth, which
+        induce such a high level of congestion marking. For a CC using Classic
+        ECN, this would be interpreted as equivalent to the same, very high,
+        loss level. The Classic CC would then continually drive its own rate
+        down in the face of such an apparently high level of congestion.</t>
+
+        <t>This is why coexistence with existing traffic is important for the
+        Prague CC. It has to be able to detect whether it is sharing the
+        bottleneck with Classic traffic, and if so fall back to behaving in a
+        Classic way. If the bottleneck does not support ECN at all, that is
+        easy - the Prague CC just responds in the Classic way to loss (see
+        <xref target="pracc_fallback_loss"/>). But if it is sharing the
+        bottleneck with Classic ECN traffic, this is more difficult to detect
+        (see <xref target="pracc_fallback_ecn"/>). </t>
+      </section>
+
+      <section anchor="pracc_roadmap" title="Document Purpose and Roadmap">
+        <t>{ToDo: Explain that there is not 'One True Prague CC'. L4S is
+        intended to enable development of any scalable CC that meets the
+        Prague requirements. This doc is only meant to describe a reference
+        implementation. It doesn't satisfy all the requirements, and the IETF
+        might decide that certain requirements need to be relaxed as an
+        outcome of the process of trying to satisfy them all.}</t>
+      </section>
 
       <section title="Maturity Status (To be Removed Before Publication)">
         <t>The field of congestion control is always a work in progress.
@@ -167,23 +258,6 @@
         updated. Once all areas are complete, this section will be removed.
         Prague CC will then still be a work in progress, but only on a similar
         footing as all other congestion controls.</t>
-      </section>
-
-      <section anchor="pracc_motivation"
-               title="Motivation: Low Delay /and/ High Bandwidth">
-        <t>{ToDo: Copy largely from netdev Prague paper.}</t>
-
-        <t>Not just for today's scale - mention scaling as well as low delay,
-        high bandwidth.</t>
-      </section>
-
-      <section anchor="pracc_roadmap" title="Document Purpose and Roadmap">
-        <t>{ToDo: Explain that there is not 'One True Prague CC'. L4S is
-        intended to enable development of any scalable CC that meets the
-        Prague requirements. This doc is only meant to describe a reference
-        implementation. It doesn't satisfy all the requirements, and the IETF
-        might decide that certain requirements need to be relaxed as an
-        outcome of the process of trying to satisfy them all.}</t>
       </section>
 
       <section anchor="pracc_Terminology" title="Terminology">
@@ -217,6 +291,10 @@
             transport has to comply with the requirements in Section 4
             of&nbsp;<xref target="I-D.ietf-tsvwg-ecn-l4s-id"/> (aka. the
             'Prague L4S requirements').</t>
+
+            <t hangText="Response function:">The relationship between the
+            window (cwnd or W) and the congestion signalling probability, p.
+            response function of a scalable congestion control is 1/p.</t>
 
             <t hangText="Reno-friendly:">The subset of Classic traffic that
             excludes unresponsive traffic and excludes experimental congestion
@@ -280,39 +358,18 @@
       </section>
     </section>
 
-    <section anchor="pracc_l4s" title="Bigger Picture - L4S Overview">
-      <t>{This section will be deleted. But it's left here for now to remind
-      me of things to say in the Introduction.}</t>
-
-      <section title="Low Queuing Delay and High Utilization">
-        <t>{ToDo: Copy largely from netdev Prague paper}</t>
-      </section>
-
-      <section title="Immediate Explicit Congestion Notification">
-        <t>{ToDo: Copy largely from netdev Prague paper}</t>
-      </section>
-
-      <section title="Scaling with Flow Rate">
-        <t>{ToDo: Copy largely from netdev Prague paper}</t>
-      </section>
-
-      <section title="Coexistence with Existing Traffic">
-        <t>{ToDo: Copy largely from netdev Prague paper}</t>
-      </section>
-
-      <section title="The Prague L4S Requirements">
-        <t>{ToDo: Copy largely from netdev Prague paper}</t>
-      </section>
-    </section>
-
     <section title="DCTCP: Brief Recap">
       <t>{ToDo} Prob not needed? Just refer to the DCTCP RFC <xref
-      target="RFC8257"/> if interested? We will anyway axplain all aspects? or
+      target="RFC8257"/> if interested? We will anyway explain all aspects? or
       not?</t>
     </section>
 
     <section anchor="pracc_prague_cc" title="Prague Congestion Control">
       <t/>
+
+      <section title="The Prague L4S Requirements">
+        <t>{ToDo: Copy largely from netdev Prague paper}</t>
+      </section>
 
       <section anchor="pracc_pkt_id" title="Packet Identification">
         <t>On the public Internet, a sender using the Prague CC MUST set the
@@ -1000,7 +1057,7 @@ RTT_ref is /not/ used for:
         </section>
       </section>
 
-      <section title="Fall-Back on Classic ECN">
+      <section anchor="pracc_fallback_ecn" title="Fall-Back on Classic ECN">
         <t>The implementation of TCP Prague CC in Linux includes an algorithm
         to detect a Classic ECN AQM and fall back to Reno as a result, as
         required by the 'Coexistence with Classic ECN' aspect of the Prague
@@ -1056,7 +1113,7 @@ RTT_ref is /not/ used for:
         approach of <xref target="pracc_rtt_independence"/> could be used for
         higher than typical RTTs as well as lower. In this latter case,
         (RTT/RTT_ref)^2 segments would need to be added to the window per
-        reference RTT. The current TCP Prague implementation does not support
+        actual RTT. The current TCP Prague implementation does not support
         this faster AI for RTTs higher than RTT_ref, due to the expected (but
         unverified) impact on latency overshoot and responsiveness.</t>
       </section>
@@ -1111,6 +1168,14 @@ RTT_ref is /not/ used for:
     <section title="Acknowledgements">
       <t>Bob Briscoe's contribution was part-funded by the Comcast Innovation
       Fund. The views expressed here are solely those of the authors.</t>
+    </section>
+
+    <section title="Comments and Contributions Solicited (To be removed before Publication)">
+      <t>Comments and questions are encouraged and very welcome. They can be
+      addressed to the IRTF Internet Congestion Control Research Group's
+      mailing list &lt;iccrg@irtf.org&gt;, and/or to the authors via
+      &lt;draft-briscoe-iccrg-congestion-control@ietf.org&gt;. Contributions
+      of design ideas and/or code are also encouraged and welcome.</t>
     </section>
 
     <section title="Contributors">
