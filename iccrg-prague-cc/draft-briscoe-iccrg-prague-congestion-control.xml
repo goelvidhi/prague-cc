@@ -158,14 +158,15 @@
       <t>The L4S architecture <xref target="I-D.ietf-tsvwg-l4s-arch"/> places
       the host congestion control in the context of the other parts of the
       system. In particular the different types of L4S AQM in the network and
-      the ECT(1) codepoint in the IP-ECN field that conveys to the network
-      that the host supports the L4S form of ECN. The architecture document
-      also covers other issues such as: incremental deployment; protection of
-      low latency queues against accidental or malicious disruption; and the
-      relationship of L4S to other low latency technologies. The specfication
-      of the L4S ECN Protocol <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/> sets
-      down the requirements that the Prague CC has to follow (called the
-      Prague L4S Requirements).</t>
+      the codepoints in the IP-ECN field that convey to the network that the
+      host supports the L4S form of ECN. The architecture document also covers
+      other issues such as: incremental deployment; protection of low latency
+      queues against accidental or malicious disruption; and the relationship
+      of L4S to other low latency technologies. The specification of the L4S
+      ECN Protocol <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/> sets down the
+      requirements that the Prague CC has to follow (called the Prague L4S
+      Requirements - see <xref target="pracc_Prague_L4S_reqs"/> for a
+      summary).</t>
 
       <t>Links to implementations of the Prague CC and other scalable
       congestion controls (all open source) can be found via the L4S landing
@@ -367,7 +368,8 @@
     <section anchor="pracc_prague_cc" title="Prague Congestion Control">
       <t/>
 
-      <section title="The Prague L4S Requirements">
+      <section anchor="pracc_Prague_L4S_reqs"
+               title="The Prague L4S Requirements">
         <t>{ToDo: Copy largely from netdev Prague paper}</t>
       </section>
 
