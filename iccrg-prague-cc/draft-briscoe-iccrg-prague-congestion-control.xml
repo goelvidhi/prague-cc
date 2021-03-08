@@ -183,7 +183,7 @@
         to fully utilize capacity. Therefore, prior to scalable CCs like
         Prague, it was believed that very low delay was only possible by
         limiting throughput and isolating the low delay traffic from
-        capacity-seeking traffic. </t>
+        capacity-seeking traffic.</t>
 
         <t>The Prague CC uses additive increase multiplicative decrease
         (AIMD), in which it increases its window until an ECN mark (or loss)
@@ -191,7 +191,7 @@
         keeping queuing delay low without under-utilizing capacity is to keep
         the sawteeth tiny. For example the average duration of a Prague CC
         sawtooth is of the order of a round trip, whereas a classic congestion
-        control sawtooths over hundreds of round trips. </t>
+        control sawtooths over hundreds of round trips.</t>
 
         <t>Keeping the sawtooth amplitude down, keeps queue variation down and
         utilization up. Keeping the duration of the sawteeth down ensures
@@ -223,7 +223,7 @@
         easy - the Prague CC just responds in the Classic way to loss (see
         <xref target="pracc_fallback_loss"/>). But if it is sharing the
         bottleneck with Classic ECN traffic, this is more difficult to detect
-        (see <xref target="pracc_fallback_ecn"/>). </t>
+        (see <xref target="pracc_fallback_ecn"/>).</t>
       </section>
 
       <section anchor="pracc_roadmap" title="Document Purpose">
@@ -932,7 +932,7 @@ RTT_ref is /not/ used for:
           like traditional CCs. In steady-state during congestion avoidance,
           like all scalable congestion controls, it induces frequent ECN
           marks, with the same average recovery time between ECN marks, no
-          matter how much the flow rate scales. </t>
+          matter how much the flow rate scales.</t>
 
           <t>If available capacity suddenly increases, e.g. other flow(s)
           depart or the link capacity increases, these regular ECN marks will
@@ -979,7 +979,7 @@ RTT_ref is /not/ used for:
           (see <xref target="pracc_moving_avg"/>). Then there is up to one
           further round of delay because the implementations of DCTCP and
           Prague did not fully adopt the paradigm shift to extent-based
-          marking - the timing of the decrease is still based on Reno. </t>
+          marking - the timing of the decrease is still based on Reno.</t>
 
           <t>Both Reno and DCTCP/Prague respond immediately on the first sign
           of congestion. Reno's response is large, so it waits a round in CWR
@@ -996,7 +996,7 @@ RTT_ref is /not/ used for:
           proceeds over the subsequent round trip so that it can take into
           account further incoming feedback as the EWMA evolves. The reduction
           is applied per-ACK but sized to result as if it had been a single
-          response per round trip, </t>
+          response per round trip,</t>
         </section>
       </section>
 
@@ -1059,7 +1059,7 @@ RTT_ref is /not/ used for:
         <t>The implementation of TCP Prague CC in Linux includes an algorithm
         to detect a Classic ECN AQM and fall back to Reno as a result, as
         required by the 'Coexistence with Classic ECN' aspect of the Prague
-        Req 4.3. <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>. </t>
+        Req 4.3. <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>.</t>
 
         <t>The algorithm currently used (v2) is relatively simple, but rather
         than describe it here, full rationale, pseudocode and explanation can
@@ -1095,21 +1095,20 @@ RTT_ref is /not/ used for:
 
         <t>Prague Req 4.3. in <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>) only
         requires reduced RTT bias "in the range between the minimum likely RTT
-        and typical RTTs expected in the intended deployment scenario". For
-        RTTs higher than typical, the RTT bias of the Prague CC is no worse
-        than that of Classic CCs, as long as the bottleneck has heeded the
-        recommendations to avoid using an on-off AQM.</t>
+        and typical RTTs expected in the intended deployment scenario". The
+        current TCP Prague implementation satisfies this requirement (<xref
+        target="pracc_rtt_independence"/>). Nonetheless, it would be
+        preferable to be able to reduce the RTT bias for high RTT flows as
+        well.</t>
 
         <t>If a step AQM is used, the congestion episodes of flows with
-        different RTTs tend to synchronize. If two scalable CCs are allowed to
-        synchronize, the analysis in section IV of <xref target="BIC"/>
-        explains that RTT unfairness will approach infinity. </t>
-
-        <t>To prevent this, either step AQMs would have to be deprecated for
-        L4S (they are not the preferred recommendation in <xref
-        target="I-D.ietf-tsvwg-aqm-dualq-coupled"/>), or the reference RTT
-        approach of <xref target="pracc_rtt_independence"/> could be used for
-        higher than typical RTTs as well as lower. In this latter case,
+        different RTTs tend to synchronize, which exacerbates RTT bias. To
+        prevent this two candidate approaches will need to be investigated: i)
+        It might be sufficient to deprecate step AQMs for L4S (they are not
+        the preferred recommendation in <xref
+        target="I-D.ietf-tsvwg-aqm-dualq-coupled"/>); or ii) the reference RTT
+        approach of <xref target="pracc_rtt_independence"/> might be usable
+        for higher than typical RTTs as well as lower. In this latter case,
         (RTT/RTT_ref)^2 segments would need to be added to the window per
         actual RTT. The current TCP Prague implementation does not support
         this faster AI for RTTs higher than RTT_ref, due to the expected (but
@@ -1426,76 +1425,6 @@ RTT_ref is /not/ used for:
         <format target="https://arxiv.org/abs/1911.00710" type="PDF"/>
       </reference>
 
-      <reference anchor="BIC" target="DOI: 10.1109/INFCOM.2004.1354672">
-        <front>
-          <title>Binary Increase Congestion Control for Fast Long-Distance
-          Networks</title>
-
-          <author fullname="Lisong Xu" initials="L." surname="Xu">
-            <organization/>
-          </author>
-
-          <author fullname="Khaled Harfoush" initials="K." surname="Harfoush">
-            <organization/>
-
-            <address>
-              <postal>
-                <street/>
-
-                <city/>
-
-                <region/>
-
-                <code/>
-
-                <country/>
-              </postal>
-
-              <phone/>
-
-              <facsimile/>
-
-              <email/>
-
-              <uri/>
-            </address>
-          </author>
-
-          <author fullname="Injong Rhee" initials="I." surname="Rhee">
-            <organization/>
-
-            <address>
-              <postal>
-                <street/>
-
-                <city/>
-
-                <region/>
-
-                <code/>
-
-                <country/>
-              </postal>
-
-              <phone/>
-
-              <facsimile/>
-
-              <email/>
-
-              <uri/>
-            </address>
-          </author>
-
-          <date month="March" year="2004"/>
-        </front>
-
-        <seriesInfo name="Proc. IEEE Infocom'04" value="4(2514--2524)"/>
-
-        <format target="https://ieeexplore.ieee.org/document/1354672"
-                type="PDF"/>
-      </reference>
-
       <reference anchor="Ahmed19"
                  target="https://www.duo.uio.no/handle/10852/70966">
         <front>
@@ -1513,6 +1442,35 @@ RTT_ref is /not/ used for:
         <format target="https://www.duo.uio.no/bitstream/handle/10852/70966/main.pdf?sequence=5&amp;isAllowed=y"
                 type="PDF"/>
       </reference>
+
+      <!-- <reference anchor="BIC" target="DOI: 10.1109/INFCOM.2004.1354672">
+        <front>
+          <title>Binary Increase Congestion Control for Fast Long-Distance
+          Networks</title>
+
+          <author fullname="Lisong Xu" initials="L." surname="Xu">
+            <organization/>
+          </author>
+
+          <author fullname="Khaled Harfoush" initials="K." surname="Harfoush">
+            <organization/>
+
+           </author>
+
+          <author fullname="Injong Rhee" initials="I." surname="Rhee">
+            <organization/>
+
+          </author>
+
+          <date month="March" year="2004"/>
+        </front>
+
+        <seriesInfo name="Proc. IEEE Infocom'04" value="4(2514-2524)"/>
+
+        <format target="https://ieeexplore.ieee.org/document/1354672"
+                type="PDF"/>
+      </reference>
+      -->
     </references>
 
     <section title="{ToDo}">
