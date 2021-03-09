@@ -396,12 +396,11 @@
         following sections, in the hope we can prevent mistakes being repeated
         (see for instance <xref target="pracc_moving_avg"/>, <xref
         target="pracc_MD"/>). There was also a set of five intertwined 'bugs'
-        that blocked our progress for more than two years - they were all
-        masking each other, but whenever we made certain code modifications,
-        different ones would become unmasked and cause unpredictable or poor
-        performance. A draft write-up about these has been prepared, which is
-        longer than the whole of the present document, so it will be included
-        by reference once published.</t>
+        - all masking each other, but causing unpredictable or poor
+        performance as different code modifications unmasked them. A draft
+        write-up about these has been prepared, which is longer than the whole
+        of the present document, so it will be included by reference once
+        published.</t>
 
         <t>During the development process, we have unearthed fundamental
         aspects of the implementation and indeed the design of DCTCP and
@@ -420,7 +419,10 @@
         <t>The requirements are categorized into those that would impact other
         flows if not handled properly and performance optimizations that are
         important but optional from the IETF's point of view, because they
-        only affect the flow itself: <list style="hanging">
+        only affect the flow itself. The list below maps the order of the
+        requirements in <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/> to the
+        order in this document (which is by functional categories and code
+        status): <list style="hanging">
             <t hangText="Mandatory or Advisory Requirements:"><list
                 style="symbols">
                 <t>L4S-ECN packet identification: use of ECT(1) (<xref
