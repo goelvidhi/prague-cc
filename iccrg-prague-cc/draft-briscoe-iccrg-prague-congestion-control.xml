@@ -369,9 +369,105 @@
 
       <section anchor="pracc_Prague_L4S_reqs"
                title="The Prague L4S Requirements">
-        <t>{ToDo: Essentially give some context as to how the list came about
-        and just list the names of each requirement (adding recent ones like
-        pacing).}</t>
+        <t>The beneficial properties of L4S traffic (low queuing delay, etc.)
+        depend on all L4S sources satisfying a set of conditions called the
+        Prague L4S Requirements. The name is after an ad hoc meeting of about
+        thirty people co-located with the IETF in Prague in July 2015, the day
+        after the first public demonstration of L4S.</t>
+
+        <t>The meeting agreed a list of modifications to DCTCP <xref
+        target="RFC8257"/> to focus activity on a variant that would be safe
+        to use over the public Internet. it was suggested that this could be
+        called TCP Prague to distinguish it from DCTCP. This list was adopted
+        by the IETF, and has continued to evolve (see section 4 of <xref
+        target="I-D.ietf-tsvwg-ecn-l4s-id"/>). The requirements are no longer
+        TCP-specific, applying irrespective of wire-protocol (TCP, QUIC, RTP,
+        SCTP, etc). </t>
+
+        <t>This unusual start to the life of the project led to the unusual
+        development process of a reference implementation that had to resolve
+        a number of ambitious requirements, already known to be in tension
+        <xref target="Tensions17"/>.</t>
+
+        <t>DCTCP already implements a scalable congestion control. So most of
+        the changes to make it usable over the Internet seemed trivial, some
+        'merely' involving adoption of other parallel developments like
+        Accurate ECN TCP feedback or RACK. Others have been more challenging
+        (e.g. RTT-independence). And others that seemed trivial became
+        challenging given the complex set of bugs and behaviours that
+        characterize today's Internet and the Linux stack. </t>
+
+        <t>The more critical implementation challenges are highlighted in the
+        following sections, in the hope we can prevent mistakes being repeated
+        (see for instance <xref target="pracc_moving_avg"/>, <xref
+        target="pracc_MD"/>). There was also a set of five intertwined 'bugs'
+        that blocked our progress for more than two years - they were all
+        masking each other, but whenever we made certain code modifications,
+        different ones would become unmasked and cause unpredictable or poor
+        performance. A draft write-up about these has been prepared, which is
+        longer than the whole of the present document, so it will be included
+        by reference once published.</t>
+
+        <t>During the development process, we have unearthed fundamental
+        aspects of the implementation and indeed the design of DCTCP and
+        Prague that have still not caught up with the paradigm shift from
+        existence to extent-based congestion response. Some have been
+        implemented by default, e.g. not suppressing additive increase for a
+        round trip after a congestion event (<xref target="pracc_AI"/>).
+        Others have been implemented but not fully evaluated, e.g. removing
+        the 1-2 unnecessary round trips of lag in feedback processing (<xref
+        target="pracc_faster_response"/>) and yet others are still future
+        plans, e.g. further RTT-independence (<xref
+        target="pracc_further_rtt_independence"/>) and exploiting combined
+        congestion metrics in more cases (<xref
+        target="pracc_combining_metrics"/>). </t>
+
+        <t>The requirements are categorized into those that would impact other
+        flows if not handled properly and performance optimizations that are
+        important but optional from the IETF's point of view, because they
+        only affect the flow itself: <list style="hanging">
+            <t hangText="Mandatory or Advisory Requirements:"><list
+                style="symbols">
+                <t>L4S-ECN packet identification: use of ECT(1) (<xref
+                target="pracc_pkt_id"/>)</t>
+
+                <t>Accurate ECN feedback (<xref
+                target="pracc_accecn_fb"/>)</t>
+
+                <t>Reno-friendly response to a loss (<xref
+                target="pracc_fallback_loss"/>)</t>
+
+                <t>Detection of a classic ECN AQM (<xref
+                target="pracc_fallback_ecn"/>)</t>
+
+                <t>Reduced RTT dependence (<xref
+                target="pracc_rtt_independence"/>)</t>
+
+                <t>Scaling down to a fractional window (no longer mandatory,
+                see <xref target="pracc_fractional_windows"/>)</t>
+
+                <t>Detecting loss in units of time (<xref
+                target="pracc_loss_in_time"/>)</t>
+
+                <t>Minimizing bursts (<xref target="pracc_pacing"/></t>
+              </list></t>
+
+            <t hangText="Optional performance optimizations:"><list
+                style="symbols">
+                <t>ECN-capable control packets (<xref
+                target="pracc_pkt_id"/>)</t>
+
+                <t>Faster flow start (<xref
+                target="pracc_flow_start_future"/>)</t>
+
+                <t>Faster than additive increase (<xref
+                target="pracc_faster_ai"/>)</t>
+
+                <t>Segmentation offload (<xref target="pracc_offload"/>)</t>
+              </list></t>
+          </list></t>
+
+        <t/>
       </section>
 
       <section anchor="pracc_pkt_id" title="Packet Identification">
@@ -403,7 +499,7 @@
       <section title="Detecting and Measuring Congestion">
         <t/>
 
-        <section title="Accurate ECN Feedback">
+        <section anchor="pracc_accecn_fb" title="Accurate ECN Feedback">
           <t>When feedback of ECN markings was added to TCP <xref
           target="RFC3168"/>, it was decided not to report any more than one
           mark per RTT. L4S-capable congestion controls need to know the
@@ -522,7 +618,8 @@
           future work).</t>
         </section>
 
-        <section title="Scaling Loss Detection with Flow Rate">
+        <section anchor="pracc_loss_in_time"
+                 title="Scaling Loss Detection with Flow Rate">
           <t>After an ACK leaves a gap in the sequence space, a Prague CC is
           meant to deem that a loss has occurred using 'time-based units' (Req
           4.3. <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>). This is in
@@ -778,7 +875,7 @@ RTT_ref is /not/ used for:
       <section title="Packet Sending">
         <t/>
 
-        <section title="Packet Pacing">
+        <section anchor="pracc_pacing" title="Packet Pacing">
           <t>The Prague CC SHOULD pace the packets it sends to avoid the
           queuing delay and under-utilization that would otherwise be caused
           by bursts of packets that can occur, for example, when a jump in the
@@ -815,7 +912,7 @@ RTT_ref is /not/ used for:
           target="pracc_flow_start"/>).</t>
         </section>
 
-        <section title="Segmentation Offload">
+        <section anchor="pracc_offload" title="Segmentation Offload">
           <t>In the absence of hardware pacing, it becomes increasingly
           difficult for a machine to scale to higher flow rates unless it is
           allowed to send packets in larger bursts, for instance using
