@@ -106,22 +106,17 @@
     <keyword>I-D</keyword>
 
     <abstract>
-      <t>{ToDo, something like:} This specification defines the Prague
-      congestion control scheme, derived from DCTCP and adapted for Internet
-      traffic by fulfilling the L4S Prague requirements. Over paths with L4S
-      support at the bottleneck, it reuses the DCTCP mechanisms to achieve low
-      latency and full throughput. The Prague CC is intended to be deployed
-      over the Internet where it is compatible with TCP-Reno on drop based
-      bottlenecks (AQM, policers or taildrop) and with L4S network support
-      also on ECN based bottlenecks. Prague TCP can only achieve its low
-      latency and high throughput when its packets are marked with a shallow
-      ECN threshold and can only achieve its throughput fairness when a
-      Coupled or FQ AQM mechanism is in place. For Classic ECN bottlenecks
-      (RFC...) that are unaware of L4S, operators might want to apply
-      additional measures to limit or avoid the higher throughput use of L4S
-      Prague traffic. This memo presents the current state of the Linux Prague
-      TCP implementation and some possible opprtunities for further
-      performance improvements.</t>
+      <t>This specification defines the Prague congestion control scheme,
+      which is derived from DCTCP and adapted for Internet traffic by
+      addressing the Prague L4S requirements. Over paths with L4S support at
+      the bottleneck, it reuses the DCTCP mechanisms to achieve consistently
+      low latency and full throughput. it is defined independently of any
+      particular transport protocol or operating system, but notes are added
+      that highlight issues specific to certain transports and OSs. It is
+      mainly based on the current default options of the reference Linux
+      implementation of TCP Prague, but it includes experience from other
+      implementations where available. It separately describes non-default and
+      optional parts, as well as future plans.</t>
     </abstract>
   </front>
 
