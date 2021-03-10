@@ -109,7 +109,7 @@
       <t>This specification defines the Prague congestion control scheme,
       which is derived from DCTCP and adapted for Internet traffic by
       implementing the Prague L4S requirements. Over paths with L4S support at
-      the bottleneck, it reuses the DCTCP mechanisms to achieve consistently
+      the bottleneck, it adapts the DCTCP mechanisms to achieve consistently
       low latency and full throughput. It is defined independently of any
       particular transport protocol or operating system, but notes are added
       that highlight issues specific to certain transports and OSs. It is
@@ -174,7 +174,8 @@
       page <xref target="L4S-home"/>, which also links to numerous other
       L4S-related resources. A (slightly dated) paper on the specific
       implementation of the Prague CC in Linux over TCP is also available
-      <xref target="PragueLinux"/>.</t>
+      <xref target="PragueLinux"/>, and the code is at <xref
+      target="linux-code"/>.</t>
 
       <section anchor="pracc_motivation"
                title="Motivation: Low Queuing Delay /and/ Full Throughput">
@@ -1483,6 +1484,20 @@ RTT_ref is /not/ used for:
       <reference anchor="L4S-home" target="https://riteproject.eu/dctth/#code">
         <front>
           <title>L4S: Ultra-Low Queuing Delay for All</title>
+
+          <author>
+            <organization/>
+          </author>
+
+          <date day="" month="" year=""/>
+        </front>
+
+        <format target="https://riteproject.eu/dctth/" type="HTML"/>
+      </reference>
+
+      <reference anchor="linux-code" target="https://github.com/L4STeam/linux">
+        <front>
+          <title>Linux kernel tree with L4S patches</title>
 
           <author>
             <organization/>
