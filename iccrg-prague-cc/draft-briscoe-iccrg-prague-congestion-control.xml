@@ -668,18 +668,21 @@
         increase multiplicative decrease (AIMD) algorithm to DCTCP, but with
         the following differences:</t>
 
-        <section anchor="pracc_fallback_loss" title="Fall-Back on Loss">
-          <t>A Prague CC has to fall back to Reno-friendly behaviour on
+        <section anchor="pracc_loss_behaviour" title="Loss behaviour">
+          <t>A Prague CC SHOULD use congestion response of a traditionally
+          deployed congestion controller such as Cubic or Reno on
           detection of a loss (Req 4.3. <xref
           target="I-D.ietf-tsvwg-ecn-l4s-id"/>). DCTCP falls back to Reno for
           the round trip after a loss, and the Linux reference implementation
-          of TCP Prague inherits this behaviour.</t>
+          of TCP Prague currently inherits this behaviour. An implementation can
+          use Cubic's response on loss detection instead of Reno for both reduction
+          and growth of cwnd after a loss.</t>
 
           <t>If a Prague CC has already reduced the congestion window due to
           ECN feedback less than a round trip before it detects a loss, it MAY
           reduce the congestion window by a smaller amount due to the loss, as
-          long as the reductions due to ECN and the loss are Reno-friendly
-          when taken together.</t>
+          long as the reductions due to ECN and the loss add up to the reduction
+          value of a traditional congestion controller in response to loss.</t>
 
           <t>See <xref target="pracc_combining_metrics"/> for discussion of
           future work on congestion control using a combination of delay, ECN
@@ -981,7 +984,10 @@ RTT_ref is /not/ used for:
                   40, 80 etc. in each round. Then, if a queue builds during a
                   round (e.g. due to other unexpected traffic arriving) it can
                   drain in the gap before the next subset, rather than the
-                  whole set backing up in a much larger queue.<vspace
+                  whole set backing up in a much larger queue. As smoothed
+                  RTT is unknown or inaccurate in the beginning, an
+                  implementation can either pace IW over a constant initial rate
+                  or pace over a factor of initial smoothed RTT.<vspace
                   blankLines="1"/>In the Linux reference implementation of TCP
                   Prague, IW pacing can be optionally enabled, but it is off
                   by default, because it is yet to be fully evaluated. It
@@ -1111,7 +1117,7 @@ RTT_ref is /not/ used for:
           proceeds over the subsequent round trip so that it can take into
           account further incoming feedback as the EWMA evolves. The reduction
           is applied per-ACK but sized to result as if it had been a single
-          response per round trip,</t>
+          response per round trip.</t>
         </section>
       </section>
 
@@ -1133,8 +1139,9 @@ RTT_ref is /not/ used for:
           trip due to ECN marking. This double reduction can end up factoring
           down cwnd to as little as 1/4 in one round trip.</t>
 
-          <t>On a loss while in CWR state following an ECN reduction, it would
-          be possible to factor down cwnd by 1/(2-alpha), which would compound
+          <t>On a loss while in CWR state following an ECN reduction, for an
+          implementation that uses Reno response, it would be possible to
+          factor down cwnd by 1/(2-alpha), which would compound
           with the previous decrease factor of (1-alpha/2) to result in: (1 -
           alpha/2) / (2-alpha)) = 1/2. In integer arithmetic, this division
           would be possible but relatively expensive. A less expensive
@@ -1142,7 +1149,10 @@ RTT_ref is /not/ used for:
           approximates to a compounded decrease factor of 1/2 for typical low
           values of alpha, even up to 30%. The compound decrease factor is
           never greater than 1/2 and in the worst case, if alpha was 100%, it
-          would factor cwnd down by 3/8.</t>
+          would factor cwnd down by 5/8. If an implementation uses Cubic response
+          on a loss after an ECN reduction in the same round trip, it can use a
+          multiplicative decrease factor of 7/5(2-alpha) which would result in a
+          combined reduction to 7/10 of previous cwnd value.</t>
         </section>
 
         <section title="ECN with Delay">
