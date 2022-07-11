@@ -673,7 +673,7 @@
         increase multiplicative decrease (AIMD) algorithm to DCTCP, but with
         the following differences:</t>
 
-        <section anchor="pracc_loss_behaviour" title="Loss behaviour">
+        <section anchor="pracc_fallback_loss" title="Loss behaviour">
           <t>A Prague CC MUST use a Reno-friendly congestion response (such as
           that of CUBIC <xref target="I-D.ietf-tcpm-rfc8312bis"/> or Reno
           <xref target="RFC5681"/>) on detection of a loss (Req 2 in section
@@ -1314,6 +1314,9 @@ RTT_ref is /not/ used for:
     </section>
 
     <section title="Acknowledgements">
+      <t>THanks to Vidhi Goel for suggested improvements, including providing
+      new text.</t>
+
       <t>Bob Briscoe's contribution was part-funded by the Comcast Innovation
       Fund. The views expressed here are solely those of the authors.</t>
     </section>
