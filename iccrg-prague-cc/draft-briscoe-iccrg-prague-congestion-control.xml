@@ -195,7 +195,7 @@
         the sawteeth tiny. For example the average duration of a Prague CC
         sawtooth is of the order of a round trip, whereas a classic congestion
         control sawtooths over hundreds of round trips. For instance, over an
-        RTT of 36ms, at 100Mb/s Cubic takes about 106 round trips to recover,
+        RTT of 36ms, at 100Mb/s CUBIC takes about 106 round trips to recover,
         and at 800 Mb/s its recovery time triples to over 340 round trips, or
         still more than 12 seconds (Reno would take 57 seconds.</t>
 
@@ -674,17 +674,17 @@
           of <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>). DCTCP falls back to
           Reno for the round trip after a loss, and the Linux reference
           implementation of TCP Prague currently inherits this behaviour. On
-          detection of loss, an implementation can use CUBIC's response
+          detection of loss, an implementation can use CUBIC's behaviour
           instead of Reno's for both the reduction after the loss and the
-          subsequent growth of cwnd.</t>
+          subsequent growth of cwnd until the next congestion event.</t>
 
           <t>If a Prague CC has already reduced the congestion window due to
           ECN feedback less than a round trip before it detects a loss, it MAY
           reduce the congestion window by a smaller amount due to the loss, as
-          long as the reductions due to ECN and the loss when multiplied
-          together result in the reduction the particularly Prague
-          implementation usually makes in response to loss (e.g. 50% to
-          emulate Reno or 30% to emulate CUBIC).</t>
+          long as the reductions, due to ECN and the loss, when multiplied
+          together result in the reduction that the implementation usually
+          makes in response to loss (e.g. 50% to emulate Reno or 30% to
+          emulate CUBIC).</t>
 
           <t>See <xref target="pracc_combining_metrics"/> for discussion of
           future work on congestion control using a combination of delay, ECN
@@ -812,46 +812,54 @@
           defined as below the typical RTT for the intended deployment
           environment.</t>
 
-          <t>A Prague CC reduces RTT bias by using a reference RTT (RTT_ref)
-          rather than the actual round trip (RTT) for all three of: the window
-          update period; the EWMA update period; and the duration of CWR state
-          after a decrease. As the actual window (cwnd) is still sent within 1
-          actual RTT, we also need to use a (conceptual) reference window,
-          cwnd_ref. For instance, if RTT_ref = 25 ms then, when the actual RTT
-          is 5 ms, there are RTT_ref/RTT = 5 times more packets in cwnd_ref,
-          than in the actual window, cwnd, because it spans 5 actual round
-          trips. We define M as the ratio RTT_ref/RTT.<!--ToDo: Say what the reference values are not used for:
+          <t>The reference Prague CC reduces RTT bias by using a virtual RTT
+          (rtt_virt) rather than the actual round trip (rtt) for all three of:
+          the period of additive window increase; the EWMA update period; and
+          the duration of CWR state after a decrease. rtt_virt is a function
+          of the actual RTT. The function is chosen so that, when the actual
+          RTT is high, the virtual RTT is essentially equal to the actual RTT;
+          but for lower actual RTTs, the virtual RTT is increasingly larger
+          than the actual RTT. Example functions for the virtual RTT are:<list>
+              <t>rtt_virt = max(rtt, RTT_VIRT_MIN);</t>
+
+              <t>rtt_virt = rtt + AdditionalRTT; </t>
+
+              <t/>
+            </list>where RTT_VIRT_MIN and AdditionalRTT are constants. The
+          current default is rtt_virt = max(rtt, 25ms), which addresses the
+          main Prague requirement for when the RTT is smaller than
+          typical.</t>
+
+          <t>As the actual window (cwnd) is still sent within 1 actual RTT, we
+          also need to use a (conceptual) virtual window, cwnd_virt. For
+          instance, if rtt_virt = 25 ms then, when the actual RTT is 5 ms,
+          there are rtt_virt/rtt = 5 times more packets in cwnd_virt, than in
+          the actual window, cwnd, because it spans 5 actual round trips. We
+          define M as the ratio rtt_virt/rtt.<!--ToDo: Say what the reference values are not used for:
 * cwnd_ref is not used for regulating the sending of packets (i.e. Prague still uses the min  of cwnd and rwnd)
 
 RTT_ref is /not/ used for:
 * retransmission timers (i.e. RTT is still used)--></t>
 
-          <t>In the Linux implementation of TCP Prague, RTT_ref is a function
-          of the actual RTT. 3 functions have been implemented: RTT_ref =
-          max(RTT, RTT_REF_MIN); RTT_ref = RTT + AdditionalRTT; RTT_ref = ...
-          {ToDo}. The current default is RTT_ref = max(RTT, 25ms), which
-          addresses the main Prague requirement for when the RTT is smaller
-          than typical.</t>
-
           <t>In Reno or DCTCP, additive increase is implemented by dividing
           the desired increase of 1 segment per round over the cwnd packets in
           the round. This requires an increase of 1/cwnd per packet. In the
           Linux implementation of TCP Prague, the aim is to increase the
-          reference window by 1 segment over a reference round. However, in
+          reference window by 1 segment over a virtual RTT. However, in
           practice the increase is applied to the actual window, cwnd, which
-          is M times smaller than cwnd_ref. So cwnd has to be increased by
-          only 1/M segments over RTT_ref. But again, in practice, the increase
-          is applied over an actual window of packets spanning an actual RTT,
-          which is also M times smaller than the reference RTT. So the desired
-          increase in cwnd is only 1/M^2 segments over an actual round trip
-          containing cwnd packets. Therefore, the increase in cwnd per packet
-          has to be (1/M^2) * (1/cwnd).</t>
+          is M times smaller than cwnd_virt. So cwnd has to be increased by
+          only 1/M segments over rtt_virt. But again, in practice, the
+          increase is applied over an actual window of packets spanning an
+          actual RTT, which is also M times smaller than the virtual RTT. So
+          the desired increase in cwnd is only 1/M^2 segments over an actual
+          round trip containing cwnd packets. Therefore, the increase in cwnd
+          per packet has to be (1/M^2) * (1/cwnd).</t>
 
           <t>Unless a flow lasts long enough for rates to converge, equal
           rates will not be relevant. So, the Reduced RTT-Dependence algorithm
           only comes into effect after D rounds, where D is configurable
           (current default 500). Continuing the previous example, if actual
-          RTT=5 ms and RTT_ref = 25 ms, then Prague would stop using its
+          rtt=5 ms and rtt_virt = 25 ms, then Prague would stop using its
           RTT-dependent algorithm after 500*5ms = 2.5s and instead it would
           start to converge to equal rates using the Reduced RTT-Dependence
           algorithm. If the actual RTT were higher (e.g. 20ms), it would stay
@@ -871,9 +879,9 @@ RTT_ref is /not/ used for:
           <xref target="pracc_further_rtt_independence"/>.</t>
 
           <t><xref target="pracc_further_rtt_independence"/> also discusses
-          extending the reduction in RTT-dependence to longer RTTs than than
-          RTT_ref. The current Prague implementation does not support
-          this.</t>
+          extending the reduction in RTT-dependence to longer RTTs than
+          RTT_VIRT_MIN (i.e. longer than 25ms). The current Prague
+          implementation does not support this.</t>
         </section>
 
         <section anchor="pracc_flow_start" title="Flow Start or Restart">
@@ -988,31 +996,30 @@ RTT_ref is /not/ used for:
                   arriving) it can drain in the gap before the next subset,
                   rather than the whole set backing up into a much larger
                   queue. As smoothed RTT is unknown or inaccurate at the start
-                  of a flow, an implementation can pace IW over the initial
-                  smoothed RTT inflated by a safety margin (perhaps also
-                  clamped between hard-coded sanity limits). The
-                  implementation could also initialize SRTT with a value it
-                  had previously cached per destination (as long as it was
-                  sufficiently fresh). The safety factor could depend on
-                  whether a cached value was available and how fresh it
-                  was.<vspace blankLines="1"/>In the Linux reference
-                  implementation of TCP Prague, IW pacing can be optionally
-                  enabled, but it is off by default, because it is yet to be
-                  fully evaluated. It currently paces IW over half the initial
-                  smoothed round trip time (SRTT) measured during the
-                  handshake. SRTT is halved because the RTT often reduces
-                  after the initial handshake. For example: i) some CDNs move
-                  the flow to a closer server after establishment; ii) the
-                  initial RTT from a server can include the time to wake a
-                  sleeping handset battery; iii) some uplink technologies take
-                  a link-level round trip to request a scheduling slot.<vspace
-                  blankLines="1"/>It is planned to exploit any cached
-                  knowledge of the path RTT to improve the initial estimate,
-                  for instance using the Linux per-destination cache. it is
-                  also planned to allow the application to give an RTT hint
-                  (by setting sk_max_pacing_rate in Linux) if the developer
-                  has reason to believe that the application has a better
-                  estimate.</t>
+                  of a flow, an implementation can pace IW over a fraction of
+                  the initial smoothed RTT (perhaps also clamped between
+                  hard-coded sanity limits). The implementation could also
+                  initialize SRTT with a value it had previously cached per
+                  destination (as long as it is sufficiently fresh). The
+                  safety factor could depend on whether a cached value was
+                  available and how recent it was.<vspace blankLines="1"/>In
+                  the Linux reference implementation of TCP Prague, IW pacing
+                  can be optionally enabled, but it is off by default, because
+                  it is yet to be fully evaluated. It currently paces IW over
+                  half the initial smoothed round trip time (SRTT) measured
+                  during the handshake. SRTT is halved because the RTT often
+                  reduces after the initial handshake. For example: i) some
+                  CDNs move the flow to a closer server after establishment;
+                  ii) the initial RTT from a server can include the time to
+                  wake a sleeping handset battery; iii) some uplink
+                  technologies take a link-level round trip to request a
+                  scheduling slot.<vspace blankLines="1"/>It is also planned
+                  to exploit any cached knowledge of the path RTT to improve
+                  the initial estimate, for instance using the Linux
+                  per-destination cache. it is also planned to allow the
+                  application to give an RTT hint (by setting
+                  sk_max_pacing_rate in Linux) if the developer has reason to
+                  believe that the application has a better estimate.</t>
 
                   <t hangText="Exiting slow start more gracefully:">In the
                   wide area Internet (in contrast to data centres), bottleneck
@@ -1148,16 +1155,16 @@ RTT_ref is /not/ used for:
           down cwnd to as little as 1/4 in one round trip.</t>
 
           <t>On a loss while in CWR state following an ECN reduction, for an
-          implementation that uses Reno response, it would be possible to
-          factor down cwnd by 1/(2-alpha), which would compound with the
+          implementation that uses Reno response, it would be possible to use
+          a decrease factor of 1/(2-alpha), which would compound with the
           previous decrease factor of (1-alpha/2) to result in a factor of: (1
           - alpha/2) / (2-alpha)) = 1/2. In integer arithmetic, this division
           would be possible but relatively expensive. A less expensive
-          alternative would be multiplication by (2+alpha)/4, which
+          alternative would be a decrease factor of (2+alpha)/4, which
           approximates to a compounded decrease factor of 1/2 for typical low
           values of alpha, even up to 30%. The compound decrease factor is
-          never greater than 1/2 and in the worst case, if alpha was 100%, it
-          would factor cwnd down by 5/8.</t>
+          never greater than 1/2 and in the worst case, if alpha were 100%, it
+          is 3/8.</t>
 
           <t>If an implementation uses a CUBIC response on loss after an ECN
           reduction in the same round trip, it can use a multiplicative
@@ -1221,8 +1228,8 @@ RTT_ref is /not/ used for:
         long-running flows. So in the current TCP Prague implementation it
         remains disabled for a certain number of round trips after the start
         of a flow, as explained in <xref target="pracc_rtt_independence"/>. It
-        would be possible to make RTT_ref gradually move from the actual RTT
-        to the target reference RTT, or peerhaps depend on other parameters of
+        would be possible to make rtt_virt gradually move from the actual RTT
+        to the target virtual RTT, or perhaps depend on other parameters of
         the flow. Nonetheless, just switching in the algorithm after a number
         of rounds works well enough. It is planned to also disable the
         algorithm for a similar duration if a flow becomes idle then restarts,
@@ -1241,13 +1248,14 @@ RTT_ref is /not/ used for:
         prevent this two candidate approaches will need to be investigated: i)
         It might be sufficient to deprecate step AQMs for L4S (they are not
         the preferred recommendation in <xref
-        target="I-D.ietf-tsvwg-aqm-dualq-coupled"/>); or ii) the reference RTT
+        target="I-D.ietf-tsvwg-aqm-dualq-coupled"/>); or ii) the virtual RTT
         approach of <xref target="pracc_rtt_independence"/> might be usable
         for higher than typical RTTs as well as lower. In this latter case,
-        (RTT/RTT_ref)^2 segments would need to be added to the window per
+        (rtt/rtt_virt)^2 segments would need to be added to the window per
         actual RTT. The current TCP Prague implementation does not support
-        this faster AI for RTTs higher than RTT_ref, due to the expected (but
-        unverified) impact on latency overshoot and responsiveness.</t>
+        this faster AI for RTTs longer than RTT_VIRT_MIN (25ms), due to the
+        expected (but unverified) impact on latency overshoot and
+        responsiveness.</t>
       </section>
 
       <section anchor="pracc_fractional_windows"
