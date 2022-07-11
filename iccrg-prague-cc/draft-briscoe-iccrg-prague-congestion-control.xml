@@ -233,8 +233,8 @@
         bottleneck with Classic ECN traffic, this is more difficult to detect
         (see <xref target="pracc_fallback_ecn"/>). Because the Prague CC
         removes most of the queue, it also addresses RTT-dependence.
-        Otherwise, at low base RTTs, it would become far more RTT-dependent
-        than Classic CCs.</t>
+        Otherwise, at low base RTTs, its flow rate would become far more
+        RTT-dependent than Classic CCs.</t>
       </section>
 
       <section anchor="pracc_roadmap" title="Document Purpose">
@@ -403,7 +403,8 @@
         <t>DCTCP already implements a scalable congestion control. So most of
         the changes to make it usable over the Internet seemed trivial, some
         'merely' involving adoption of other parallel developments like
-        Accurate ECN TCP feedback or RACK. Others have been more challenging
+        Accurate ECN TCP feedback <xref target="I-D.ietf-tcpm-accurate-ecn"/>
+        or RACK <xref target="RFC8985"/>. Others have been more challenging
         (e.g. RTT-independence). And others that seemed trivial became
         challenging given the complex set of bugs and behaviours that
         characterize today's Internet and the Linux stack.</t>
@@ -562,15 +563,14 @@
 
           <section title="Accurate ECN Feedback with Other Modern Transports">
             <t>Transport protocols specified recently, .e.g. DCCP <xref
-            target="RFC4340"/>, QUIC <xref target="I-D.ietf-quic-transport"/>,
-            are unambiguously suitable for Prague CCs, because they were
-            designed from the start with accurate ECN feedback.</t>
+            target="RFC4340"/>, QUIC <xref target="RFC9000"/>, are
+            unambiguously suitable for Prague CCs, because they were designed
+            from the start with accurate ECN feedback.</t>
 
             <t>In the case of RTP/RTCP, ECN feedback was added in <xref
             target="RFC6679"/>, which is sufficient for the Prague CC.
             However, it is preferable to use the most recent improvements to
-            ECN feedback in <xref
-            target="I-D.ietf-avtcore-cc-feedback-message"/>, as used in the
+            ECN feedback in <xref target="RFC8888"/>, as used in the
             implementation of the L4S variant of SCReAM <xref
             target="RFC8298"/>.</t>
           </section>
@@ -591,7 +591,12 @@
           an exponentially weighted moving average (EWMA) of this fraction,
           called alpha, using the following algorithm:<list style="empty">
               <t>alpha += g * (frac - alpha);</t>
-            </list>where g is the gain of the EWMA (default 1/16).</t>
+            </list>where g is the gain of the EWMA (default 1/16). </t>
+
+          <t>The moving average, alpha, is initialized to 1 at the first sign
+          of ECN feedback, which ensures the maximum congestion response to
+          the first appearance of congestion at a bottleneck supporting
+          ECN.</t>
 
           <t>Implementation notes:<list style="hanging">
               <t hangText="Rounding problems in DCTCP:">Alpha is a fraction
@@ -645,7 +650,7 @@
           <t>To satsify this requirement, a Prague CC SHOULD wait until a
           certain fraction of the RTT has elapsed before it deems that the gap
           is due to packet loss. The reference implementation of TCP Prague in
-          Linux uses RACK <xref target="I-D.ietf-tcpm-rack"/> to address this
+          Linux uses RACK <xref target="RFC8985"/> to address this
           requirement. An approach similar to TCP RACK is also used in
           QUIC.</t>
 
@@ -670,13 +675,15 @@
 
         <section anchor="pracc_loss_behaviour" title="Loss behaviour">
           <t>A Prague CC MUST use a Reno-friendly congestion response (such as
-          that of CUBIC or Reno) on detection of a loss (Req 2 in section 4.3.
-          of <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>). DCTCP falls back to
-          Reno for the round trip after a loss, and the Linux reference
-          implementation of TCP Prague currently inherits this behaviour. On
-          detection of loss, an implementation can use CUBIC's behaviour
-          instead of Reno's for both the reduction after the loss and the
-          subsequent growth of cwnd until the next congestion event.</t>
+          that of CUBIC <xref target="I-D.ietf-tcpm-rfc8312bis"/> or Reno
+          <xref target="RFC5681"/>) on detection of a loss (Req 2 in section
+          4.3. of <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>). DCTCP falls
+          back to Reno for the round trip after a loss, and the Linux
+          reference implementation of TCP Prague currently inherits this
+          behaviour. On detection of loss, an implementation can use CUBIC's
+          behaviour instead of Reno's for both the reduction after the loss
+          and the subsequent growth of cwnd until the next congestion
+          event.</t>
 
           <t>If a Prague CC has already reduced the congestion window due to
           ECN feedback less than a round trip before it detects a loss, it MAY
@@ -692,10 +699,10 @@
 
           <t>Implementation note:<list style="hanging">
               <t hangText="DCTCP bug prior to v5.1:">A Prague CC cannot rely
-              on the fall-back-on-loss behaviour of the DCTCP code in the
-              Linux kernel prior to v5.1, due to a previous bug in the fast
-              retransmit code (but not in the retransmission timeout code)
-              <xref target="patch-loss-react"/>.</t>
+              on inheriting the fall-back-on-loss behaviour of the DCTCP code
+              in the Linux kernel prior to v5.1, due to a previous bug in the
+              fast retransmit code (but not in the retransmission timeout
+              code) <xref target="patch-loss-react"/>.</t>
             </list></t>
         </section>
 
@@ -813,29 +820,30 @@
           environment.</t>
 
           <t>The reference Prague CC reduces RTT bias by using a virtual RTT
-          (rtt_virt) rather than the actual round trip (rtt) for all three of:
-          the period of additive window increase; the EWMA update period; and
-          the duration of CWR state after a decrease. rtt_virt is a function
-          of the actual RTT. The function is chosen so that, when the actual
-          RTT is high, the virtual RTT is essentially equal to the actual RTT;
-          but for lower actual RTTs, the virtual RTT is increasingly larger
-          than the actual RTT. Example functions for the virtual RTT are:<list>
-              <t>rtt_virt = max(rtt, RTT_VIRT_MIN);</t>
+          (rtt_virt) rather than the actual smoothed RTT (srtt) for all three
+          of: i) the period of additive window increase; ii) the EWMA update
+          period; and iii) the duration of CWR state after a decrease.
+          rtt_virt is calculated as a function of the actual smoothed RTT,
+          chosen so that, when the srtt is high, the virtual RTT is
+          essentially the same; but for lower actual RTTs, the virtual RTT is
+          increasingly larger than the actual RTT. Example functions for the
+          virtual RTT are:<list>
+              <t>rtt_virt = max(srtt, RTT_VIRT_MIN);</t>
 
-              <t>rtt_virt = rtt + AdditionalRTT; </t>
+              <t>rtt_virt = srtt + AdditionalRTT; </t>
 
               <t/>
             </list>where RTT_VIRT_MIN and AdditionalRTT are constants. The
-          current default is rtt_virt = max(rtt, 25ms), which addresses the
+          current default is rtt_virt = max(srtt, 25ms), which addresses the
           main Prague requirement for when the RTT is smaller than
           typical.</t>
 
           <t>As the actual window (cwnd) is still sent within 1 actual RTT, we
           also need to use a (conceptual) virtual window, cwnd_virt. For
           instance, if rtt_virt = 25 ms then, when the actual RTT is 5 ms,
-          there are rtt_virt/rtt = 5 times more packets in cwnd_virt, than in
+          there are rtt_virt/srtt = 5 times more packets in cwnd_virt, than in
           the actual window, cwnd, because it spans 5 actual round trips. We
-          define M as the ratio rtt_virt/rtt.<!--ToDo: Say what the reference values are not used for:
+          define M as the ratio rtt_virt/srtt.<!--ToDo: Say what the reference values are not used for:
 * cwnd_ref is not used for regulating the sending of packets (i.e. Prague still uses the min  of cwnd and rwnd)
 
 RTT_ref is /not/ used for:
@@ -855,16 +863,18 @@ RTT_ref is /not/ used for:
           round trip containing cwnd packets. Therefore, the increase in cwnd
           per packet has to be (1/M^2) * (1/cwnd).</t>
 
-          <t>Unless a flow lasts long enough for rates to converge, equal
-          rates will not be relevant. So, the Reduced RTT-Dependence algorithm
-          only comes into effect after D rounds, where D is configurable
-          (current default 500). Continuing the previous example, if actual
-          rtt=5 ms and rtt_virt = 25 ms, then Prague would stop using its
-          RTT-dependent algorithm after 500*5ms = 2.5s and instead it would
-          start to converge to equal rates using the Reduced RTT-Dependence
-          algorithm. If the actual RTT were higher (e.g. 20ms), it would stay
-          in RTT-dependent mode for longer (10s), but this would be mitigated
-          by its RTT being closer to the reference (20ms vs. 25ms).</t>
+          <t>Unless a flow lasts long enough for rates to converge, aiming for
+          equal rates will not be relevant. So, the Reduced RTT-Dependence
+          algorithm only comes into effect after D rounds, where D is
+          configurable (current default 500). Continuing the previous example,
+          if actual srtt=5 ms and rtt_virt = 25 ms, then Prague would use the
+          regular RTT-dependent algorithm for the first 500*5ms = 2.5s. Then
+          it would start to converge to more equal rates using its Reduced
+          RTT-Dependence algorithm. If the actual RTT were higher (e.g. 20ms),
+          it would stay in the regular RTT-dependent mode for longer (500
+          rounds = 10s), but this would be mitigated by the actual RTT it uses
+          at the start being closer to the virtual RTT it eventually uses
+          (20ms and 25ms resp.).</t>
 
           <t>This approach prevents reduced RTT-dependence from making the
           flow less responsive at start-up and ensures that its early
@@ -874,9 +884,9 @@ RTT_ref is /not/ used for:
           RTTs. Nonetheless, the throughput still converges to equal rates
           after D rounds.</t>
 
-          <t>It is planned to reset the algorithm to be RTT-dependent after an
-          idle, not just at flow start, as discussed under Future Work in
-          <xref target="pracc_further_rtt_independence"/>.</t>
+          <t>It is planned to reset the algorithm to the regular RTT-dependent
+          behaviour after an idle, not just at flow start, as discussed under
+          Future Work in <xref target="pracc_further_rtt_independence"/>.</t>
 
           <t><xref target="pracc_further_rtt_independence"/> also discusses
           extending the reduction in RTT-dependence to longer RTTs than
@@ -1227,21 +1237,19 @@ RTT_ref is /not/ used for:
         <t>The algorithm to reduce RTT dependence is only relevant for
         long-running flows. So in the current TCP Prague implementation it
         remains disabled for a certain number of round trips after the start
-        of a flow, as explained in <xref target="pracc_rtt_independence"/>. It
-        would be possible to make rtt_virt gradually move from the actual RTT
-        to the target virtual RTT, or perhaps depend on other parameters of
-        the flow. Nonetheless, just switching in the algorithm after a number
-        of rounds works well enough. It is planned to also disable the
-        algorithm for a similar duration if a flow becomes idle then restarts,
-        but this is yet to be evaluated.</t>
+        of a flow, as explained in <xref target="pracc_rtt_independence"/>.
+        Instead, it would be possible to make rtt_virt gradually move from the
+        actual RTT to the target virtual RTT, or perhaps depend on other
+        parameters of the flow. Nonetheless, just switching in the algorithm
+        after a number of rounds works well enough. It is planned to also
+        disable the algorithm for a similar duration if a flow becomes idle
+        then restarts, but this is yet to be evaluated.</t>
 
         <t>Prague Req 4.3. in <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>) only
         requires reduced RTT bias "in the range between the minimum likely RTT
-        and typical RTTs expected in the intended deployment scenario". The
-        current TCP Prague implementation satisfies this requirement (<xref
-        target="pracc_rtt_independence"/>). Nonetheless, it would be
-        preferable to be able to reduce the RTT bias for high RTT flows as
-        well.</t>
+        and typical RTTs expected in the intended deployment scenario".
+        Nonetheless, in future it would be preferable to be able to reduce the
+        RTT bias for high RTT flows as well.</t>
 
         <t>If a step AQM is used, the congestion episodes of flows with
         different RTTs tend to synchronize, which exacerbates RTT bias. To
@@ -1251,7 +1259,7 @@ RTT_ref is /not/ used for:
         target="I-D.ietf-tsvwg-aqm-dualq-coupled"/>); or ii) the virtual RTT
         approach of <xref target="pracc_rtt_independence"/> might be usable
         for higher than typical RTTs as well as lower. In this latter case,
-        (rtt/rtt_virt)^2 segments would need to be added to the window per
+        (srtt/rtt_virt)^2 segments would need to be added to the window per
         actual RTT. The current TCP Prague implementation does not support
         this faster AI for RTTs longer than RTT_VIRT_MIN (25ms), due to the
         expected (but unverified) impact on latency overshoot and
@@ -1372,19 +1380,21 @@ RTT_ref is /not/ used for:
 
       <?rfc include='reference.RFC.8298'?>
 
+      <?rfc include='reference.RFC.8888'?>
+
+      <?rfc include='reference.RFC.8985'?>
+
+      <?rfc include='reference.RFC.9000'?>
+
       <?rfc include='reference.I-D.ietf-tsvwg-l4s-arch'?>
 
       <?rfc include='reference.I-D.ietf-tsvwg-aqm-dualq-coupled'?>
 
-      <?rfc include='reference.I-D.ietf-avtcore-cc-feedback-message'?>
-
-      <?rfc include='reference.I-D.ietf-tcpm-rack'?>
-
       <?rfc include='reference.I-D.ietf-tcpm-generalized-ecn'?>
 
-      <?rfc include='reference.I-D.ietf-quic-transport'?>
-
       <?rfc include='reference.I-D.ietf-tcpm-hystartplusplus'?>
+
+      <?rfc include='reference.I-D.ietf-tcpm-rfc8312bis'?>
 
       <reference anchor="PragueLinux"
                  target="https://www.netdevconf.org/0x13/session.html?talk-tcp-prague-l4s">
