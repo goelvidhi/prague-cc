@@ -393,7 +393,7 @@
         by the IETF, and has continued to evolve (see section 4 of <xref
         target="I-D.ietf-tsvwg-ecn-l4s-id"/>). The requirements are no longer
         TCP-specific, applying irrespective of wire-protocol (TCP, QUIC, RTP,
-        SCTP, etc). </t>
+        SCTP, etc).</t>
 
         <t>This unusual start to the life of the project led to the unusual
         development process of a reference implementation that had to resolve
@@ -406,7 +406,7 @@
         Accurate ECN TCP feedback or RACK. Others have been more challenging
         (e.g. RTT-independence). And others that seemed trivial became
         challenging given the complex set of bugs and behaviours that
-        characterize today's Internet and the Linux stack. </t>
+        characterize today's Internet and the Linux stack.</t>
 
         <t>The more critical implementation challenges are highlighted in the
         following sections, in the hope we can prevent mistakes being repeated
@@ -430,7 +430,7 @@
         plans, e.g. further RTT-independence (<xref
         target="pracc_further_rtt_independence"/>) and exploiting combined
         congestion metrics in more cases (<xref
-        target="pracc_combining_metrics"/>). </t>
+        target="pracc_combining_metrics"/>).</t>
 
         <t>The requirements are categorized into those that would impact other
         flows if not handled properly and performance optimizations that are
@@ -669,20 +669,22 @@
         the following differences:</t>
 
         <section anchor="pracc_loss_behaviour" title="Loss behaviour">
-          <t>A Prague CC SHOULD use congestion response of a traditionally
-          deployed congestion controller such as Cubic or Reno on
-          detection of a loss (Req 4.3. <xref
-          target="I-D.ietf-tsvwg-ecn-l4s-id"/>). DCTCP falls back to Reno for
-          the round trip after a loss, and the Linux reference implementation
-          of TCP Prague currently inherits this behaviour. An implementation can
-          use Cubic's response on loss detection instead of Reno for both reduction
-          and growth of cwnd after a loss.</t>
+          <t>A Prague CC MUST use a Reno-friendly congestion response (such as
+          that of CUBIC or Reno) on detection of a loss (Req 2 in section 4.3.
+          of <xref target="I-D.ietf-tsvwg-ecn-l4s-id"/>). DCTCP falls back to
+          Reno for the round trip after a loss, and the Linux reference
+          implementation of TCP Prague currently inherits this behaviour. On
+          detection of loss, an implementation can use CUBIC's response
+          instead of Reno's for both the reduction after the loss and the
+          subsequent growth of cwnd.</t>
 
           <t>If a Prague CC has already reduced the congestion window due to
           ECN feedback less than a round trip before it detects a loss, it MAY
           reduce the congestion window by a smaller amount due to the loss, as
-          long as the reductions due to ECN and the loss add up to the reduction
-          value of a traditional congestion controller in response to loss.</t>
+          long as the reductions due to ECN and the loss when multiplied
+          together result in the reduction the particularly Prague
+          implementation usually makes in response to loss (e.g. 50% to
+          emulate Reno or 30% to emulate CUBIC).</t>
 
           <t>See <xref target="pracc_combining_metrics"/> for discussion of
           future work on congestion control using a combination of delay, ECN
@@ -981,30 +983,36 @@ RTT_ref is /not/ used for:
                   spreads the ACKs over the round trip so that subsequent
                   rounds consist of ten subsets of packets (with 2, 4, 8 etc.
                   per round in each subset), rather than a single set with 20,
-                  40, 80 etc. in each round. Then, if a queue builds during a
-                  round (e.g. due to other unexpected traffic arriving) it can
-                  drain in the gap before the next subset, rather than the
-                  whole set backing up in a much larger queue. As smoothed
-                  RTT is unknown or inaccurate in the beginning, an
-                  implementation can either pace IW over a constant initial rate
-                  or pace over a factor of initial smoothed RTT.<vspace
-                  blankLines="1"/>In the Linux reference implementation of TCP
-                  Prague, IW pacing can be optionally enabled, but it is off
-                  by default, because it is yet to be fully evaluated. It
-                  currently paces IW over half the initial smoothed round trip
-                  time (SRTT) measured during the handshake. SRTT is halved
-                  because the RTT often reduces after the initial handshake.
-                  For example: i) some CDNs move the flow to a closer server
-                  after establishment; ii) the initial RTT from a server can
-                  include the time to wake a sleeping handset battery; iii)
-                  some uplink technologies take a link-level round trip to
-                  request a scheduling slot.<vspace blankLines="1"/>It is
-                  planned to exploit any cached knowledge of the path RTT to
-                  improve the initial estimate, for instance using the Linux
-                  per-destination cache. it is also planned to allow the
-                  application to give an RTT hint (by setting
-                  sk_max_pacing_rate in Linux) if the developer has reason to
-                  believe that the application has a better estimate.</t>
+                  40, 80 etc. in each round. With IW paced, if a queue builds
+                  during a round (e.g. due to other unexpected traffic
+                  arriving) it can drain in the gap before the next subset,
+                  rather than the whole set backing up into a much larger
+                  queue. As smoothed RTT is unknown or inaccurate at the start
+                  of a flow, an implementation can pace IW over the initial
+                  smoothed RTT inflated by a safety margin (perhaps also
+                  clamped between hard-coded sanity limits). The
+                  implementation could also initialize SRTT with a value it
+                  had previously cached per destination (as long as it was
+                  sufficiently fresh). The safety factor could depend on
+                  whether a cached value was available and how fresh it
+                  was.<vspace blankLines="1"/>In the Linux reference
+                  implementation of TCP Prague, IW pacing can be optionally
+                  enabled, but it is off by default, because it is yet to be
+                  fully evaluated. It currently paces IW over half the initial
+                  smoothed round trip time (SRTT) measured during the
+                  handshake. SRTT is halved because the RTT often reduces
+                  after the initial handshake. For example: i) some CDNs move
+                  the flow to a closer server after establishment; ii) the
+                  initial RTT from a server can include the time to wake a
+                  sleeping handset battery; iii) some uplink technologies take
+                  a link-level round trip to request a scheduling slot.<vspace
+                  blankLines="1"/>It is planned to exploit any cached
+                  knowledge of the path RTT to improve the initial estimate,
+                  for instance using the Linux per-destination cache. it is
+                  also planned to allow the application to give an RTT hint
+                  (by setting sk_max_pacing_rate in Linux) if the developer
+                  has reason to believe that the application has a better
+                  estimate.</t>
 
                   <t hangText="Exiting slow start more gracefully:">In the
                   wide area Internet (in contrast to data centres), bottleneck
@@ -1141,18 +1149,20 @@ RTT_ref is /not/ used for:
 
           <t>On a loss while in CWR state following an ECN reduction, for an
           implementation that uses Reno response, it would be possible to
-          factor down cwnd by 1/(2-alpha), which would compound
-          with the previous decrease factor of (1-alpha/2) to result in: (1 -
-          alpha/2) / (2-alpha)) = 1/2. In integer arithmetic, this division
+          factor down cwnd by 1/(2-alpha), which would compound with the
+          previous decrease factor of (1-alpha/2) to result in a factor of: (1
+          - alpha/2) / (2-alpha)) = 1/2. In integer arithmetic, this division
           would be possible but relatively expensive. A less expensive
           alternative would be multiplication by (2+alpha)/4, which
           approximates to a compounded decrease factor of 1/2 for typical low
           values of alpha, even up to 30%. The compound decrease factor is
           never greater than 1/2 and in the worst case, if alpha was 100%, it
-          would factor cwnd down by 5/8. If an implementation uses Cubic response
-          on a loss after an ECN reduction in the same round trip, it can use a
-          multiplicative decrease factor of 7/5(2-alpha) which would result in a
-          combined reduction to 7/10 of previous cwnd value.</t>
+          would factor cwnd down by 5/8.</t>
+
+          <t>If an implementation uses a CUBIC response on loss after an ECN
+          reduction in the same round trip, it can use a multiplicative
+          decrease factor of 7/(5*(2-alpha)) which would result in a combined
+          reduction to 7/10 of the previous cwnd, as intended for CUBIC.</t>
         </section>
 
         <section title="ECN with Delay">
