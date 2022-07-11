@@ -27,7 +27,7 @@
 <?rfc subcompact="no" ?>
 <!-- keep one blank line between list items -->
 <!-- end of list of popular I-D processing instructions -->
-<rfc category="exp" docName="draft-briscoe-iccrg-prague-congestion-control-01"
+<rfc category="exp" docName="draft-briscoe-iccrg-prague-congestion-control-02"
      ipr="trust200902" updates="">
   <!-- category values: std, bcp, info, exp, and historic
     ipr values: trust200902, noModificationTrust200902, noDerivativesTrust200902,
@@ -1314,7 +1314,7 @@ RTT_ref is /not/ used for:
     </section>
 
     <section title="Acknowledgements">
-      <t>THanks to Vidhi Goel for suggested improvements, including providing
+      <t>Thanks to Vidhi Goel for suggested improvements, including providing
       new text.</t>
 
       <t>Bob Briscoe's contribution was part-funded by the Comcast Innovation
