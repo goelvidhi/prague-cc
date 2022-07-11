@@ -27,7 +27,7 @@
 <?rfc subcompact="no" ?>
 <!-- keep one blank line between list items -->
 <!-- end of list of popular I-D processing instructions -->
-<rfc category="exp" docName="draft-briscoe-iccrg-prague-congestion-control-00"
+<rfc category="exp" docName="draft-briscoe-iccrg-prague-congestion-control-01"
      ipr="trust200902" updates="">
   <!-- category values: std, bcp, info, exp, and historic
     ipr values: trust200902, noModificationTrust200902, noDerivativesTrust200902,
