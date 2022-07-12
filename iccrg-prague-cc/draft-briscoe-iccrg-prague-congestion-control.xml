@@ -95,6 +95,22 @@
       </address>
     </author>
 
+    <author fullname="Vidhi Goel" initials="V." surname="Goel">
+      <organization>Apple Inc</organization>
+
+      <address>
+        <postal>
+          <street/>
+
+          <city>Cupertino</city>
+
+          <country>United States</country>
+        </postal>
+
+        <email>vidhi_goel@apple.com</email>
+      </address>
+    </author>
+
     <date month="" year=""/>
 
     <area>IRTF</area>
@@ -1345,6 +1361,9 @@ RTT_ref is /not/ used for:
 
           <t>Asad Sajjad Ahmed &lt;me@asadsa.com&gt;, Independent, Norway,
           wrote the Linux code that maintains a sub-packet window.</t>
+
+          <t>Vidhi Goel &lt;vidhi_goel@apple.com&gt; of Apple Inc, Cupertino,
+          wrote and maintains the Apple implmentation of QUIC Prague.</t>
         </list></t>
     </section>
   </middle>
